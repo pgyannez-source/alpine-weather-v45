@@ -1,12 +1,13 @@
-// Alpine Weather V43 unified server
+// Alpine Weather V45 unified server
 const http=require('http'),https=require('https'),url=require('url'),fs=require('fs'),path=require('path');
 const {PNG}=require('pngjs');
 const {segmentRGBA,matchCells}=require('./radar-segmentation');
 const PORT=process.env.PORT||8787, ROOT=__dirname;
 const DATA_DIR=path.join(ROOT,'data'); const DB_FILE=path.join(DATA_DIR,'alpine-weather-v45.json');
 if(!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR,{recursive:true});
-function dbLoad(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return {version:44,observations:[],forecasts:[]}}}
+function dbLoad(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch(e){return {version:45,observations:[],forecasts:[]}}}
 let DB=dbLoad();
+if(!Number.isFinite(Number(DB.version)) || Number(DB.version)<45){DB.version=45; try{fs.writeFileSync(DB_FILE,JSON.stringify(DB,null,2))}catch(e){}}
 function dbSave(){fs.writeFileSync(DB_FILE,JSON.stringify(DB,null,2));}
 function pushLimited(a,x,n=5000){a.push(x); if(a.length>n)a.splice(0,a.length-n); dbSave(); return x;}
 function send(res,code,data,ctype='application/json'){res.writeHead(code,{'Content-Type':ctype,'Access-Control-Allow-Origin':'*','Cache-Control':'no-store'});res.end(ctype==='application/json'?JSON.stringify(data):data)}

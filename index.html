@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07101d">
 <link rel="manifest" href="manifest.json">
-<title>Alpine Weather · V43</title>
+<title>Alpine Weather · V45</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3Q7Kq5N6J0QG7N8VQ0V5V8K2j9V8=" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
@@ -33,7 +33,7 @@ async function backendJSON(path){
 <body>
 <div class="app">
 <header class="top">
-  <div><div class="brand">ALPINE WEATHER</div><div class="sub">Mountain weather dashboard · V43 · Unified Backend</div></div>
+  <div><div class="brand">ALPINE WEATHER</div><div class="sub">Mountain weather dashboard · V45 · Unified Backend</div></div>
   <div class="topRight"><button class="btn" id="locBtn">⌖ GPS</button><button class="btn" id="installBtn" style="display:none">Installa</button></div>
 </header>
 
@@ -192,7 +192,7 @@ async function backendJSON(path){
 </section>
 <section class="card">
  <h2>Backend operativo</h2>
- <div class="small">Backend unificato V43: app e API vengono servite dallo stesso processo. Il campo resta disponibile per un backend remoto opzionale.</div>
+ <div class="small">Backend unificato V45: app e API vengono servite dallo stesso processo. Il campo resta disponibile per un backend remoto opzionale.</div>
  <div class="row" style="margin-top:9px"><input id="backendUrl" placeholder="https://tuo-backend.example.com" style="flex:1"><button class="btn" id="saveBackend">Salva</button></div>
  <div id="backendState" class="legend"></div>
 </section>
@@ -1338,7 +1338,7 @@ $('v41-save').onclick=()=>{const obs=+$('v41-obsT').value,e=+$('v41-eT').value,g
 $('v41-clear').onclick=()=>{if(confirm('Cancellare lo storico locale V41?')){localStorage.removeItem(K);render()}};render();
 })();</script>
 <section id="v44-database" style="margin:24px 0;padding:18px;border:1px solid #ccc;border-radius:14px">
-<h2>V44 · Archivio persistente</h2>
+<h2>V45 · Archivio persistente</h2>
 <p>Osservazioni, forecast e statistiche di calibrazione vengono conservati lato server, non solo nel browser.</p>
 <div id="v44-db-status" style="padding:12px;background:rgba(127,127,127,.08);border-radius:10px">Controllo archivio…</div>
 <button id="v44-db-refresh" style="margin-top:10px;padding:9px 12px">Aggiorna stato database</button>
