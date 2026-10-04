@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: alpine-weather-v45
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true

@@ -1,0 +1,9 @@
+{
+  "name": "Alpine Weather V6 V2",
+  "short_name": "Alpine Weather V6",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07101d",
+  "theme_color": "#07101d",
+  "icons": []
+}

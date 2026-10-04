@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07101d">
+<link rel="manifest" href="manifest.json">
+<title>Alpine Weather · V25</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3Q7Kq5N6J0QG7N8VQ0V5V8K2j9V8=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const BACKEND_URL = localStorage.getItem('alpineBackend') || '';
+async function backendJSON(path){
+  if(!BACKEND_URL) throw new Error('backend non configurato');
+  const r=await fetch(BACKEND_URL.replace(/\/$/,'')+path,{cache:'no-store'});
+  if(!r.ok) throw new Error('backend '+r.status);
+  return r.json();
+}
+</script>
+<style>
+:root{--bg:#07101d;--card:#0e1a2b;--card2:#132238;--text:#f4f7fb;--muted:#91a2b8;--line:#263850;--accent:#67b7ff;--warn:#ffc857;--good:#62d5a0;--danger:#ff7b7b}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07101d,#0a1423);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+.app{max-width:760px;margin:auto;min-height:100vh;padding-bottom:82px}.top{padding:16px 14px 8px;display:flex;gap:10px;align-items:center}.brand{font-weight:800;letter-spacing:.4px}.sub{color:var(--muted);font-size:12px}
+.topRight{margin-left:auto;display:flex;gap:7px}.btn,.select,input.search{background:var(--card2);border:1px solid var(--line);color:var(--text);padding:9px 11px;border-radius:10px}.btn{cursor:pointer}.searchbar{display:flex;gap:7px;margin:0 14px 8px}.search{width:100%;min-width:0}.results{margin:0 14px}.result{display:block;width:100%;text-align:left;background:var(--card);color:var(--text);border:1px solid var(--line);padding:10px;border-radius:10px;margin:5px 0;cursor:pointer}
+.card{background:rgba(14,26,43,.97);border:1px solid var(--line);border-radius:18px;margin:10px 14px;padding:16px;box-shadow:0 10px 30px #0002}.hero{padding:18px}.row{display:flex;align-items:center;justify-content:space-between;gap:10px}.hero h1{margin:0;font-size:24px}.alt{color:var(--muted);margin-top:3px}.temp{font-size:48px;font-weight:800;margin:15px 0 1px}.badge{padding:6px 9px;border-radius:999px;font-size:11px;background:#17362d;color:var(--good);font-weight:700}.badge.warn{background:#3a2d12;color:var(--warn)}.badge.off{background:#34231d;color:var(--warn)}
+.metricgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}.metric{background:var(--card2);padding:10px;border-radius:12px}.metric b{display:block;font-size:16px}.metric span,.small{color:var(--muted);font-size:11px}h2{font-size:16px;margin:0 0 11px}.chart{width:100%;height:205px;display:block;background:#0a1524;border-radius:12px}.axis{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin:6px 3px}.tabs{display:flex;gap:7px;overflow:auto;padding-bottom:2px}.tab{white-space:nowrap;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:10px;padding:8px 11px}.tab.active{background:#17304c;color:var(--text);border-color:#315c83}.slider{width:100%;accent-color:var(--accent)}.timeline{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;margin-top:4px}.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(760px,100%);background:#091322ee;backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(9,1fr);padding:8px 10px env(safe-area-inset-bottom)}.nav button{background:none;border:0;color:var(--muted);padding:8px 4px;font-size:11px}.nav button.active{color:var(--text)}.page{display:none}.page.active{display:block}.status{margin:0 14px 8px;color:var(--muted);font-size:11px}.footer{padding:8px 16px;color:var(--muted);font-size:10px;text-align:center;line-height:1.5}
+.routepoint{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.alertitem{padding:12px;border:1px solid var(--line);border-radius:12px;margin:7px 0;background:#132238}.alertitem strong{display:block}.alertitem .why{color:var(--muted);font-size:11px;margin-top:4px}.level-high{border-color:#6b4036;background:#291b1b}.level-med{border-color:#68572d;background:#292414}.level-info{border-color:#2d506f}.alerttag{float:right;font-size:10px;padding:4px 7px;border-radius:99px;background:#24374c;color:#c8ddf2}.routepoint:last-child{border:0}.dot{width:9px;height:9px;border-radius:50%;background:var(--accent);margin-top:5px}.notice{padding:11px;border-radius:12px;background:#142438;border:1px solid #28435f;font-size:12px;line-height:1.45}.stormgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stormbox{background:var(--card2);padding:11px;border-radius:12px}.stormbox b{display:block;font-size:18px}.storm-high{border:1px solid #6b4036;background:#291b1b}.storm-med{border:1px solid #68572d;background:#292414}.radar{height:420px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}.legend{font-size:10px;color:var(--muted);margin-top:7px}@media(max-width:430px){.stormgrid{grid-template-columns:1fr 1fr}.radar{height:360px}}
+@media(max-width:430px){.metricgrid{grid-template-columns:repeat(2,1fr)}.top{padding-top:13px}.temp{font-size:44px}}
+.timelineGrid{position:relative;background:#0a1524;border:1px solid var(--line);border-radius:14px;overflow:auto}.timelineGrid canvas{display:block;min-width:680px}.timelineLegend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--muted);margin-top:8px}.tlDot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}.tlControls{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.tlInfo{padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card2);font-size:12px;line-height:1.45}
+.briefgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.briefcard{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card2)}.briefcard b{display:block;font-size:20px;margin-bottom:4px}.brief-ok{border-color:#315b48}.brief-watch{border-color:#6a572c}.brief-high{border-color:#6b4036;background:#291b1b}.brief-muted{opacity:.75}.briefbar{height:8px;border-radius:99px;background:#17283d;overflow:hidden;margin-top:9px}.briefbar i{display:block;height:100%;width:0;background:#67b7ff}.brieflist{display:grid;gap:7px}.briefrow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.briefrow:last-child{border-bottom:0}@media(max-width:430px){.briefgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+  <div><div class="brand">ALPINE WEATHER</div><div class="sub">Mountain weather dashboard · V19 · Offline Mountain Mode</div></div>
+  <div class="topRight"><button class="btn" id="locBtn">⌖ GPS</button><button class="btn" id="installBtn" style="display:none">Installa</button></div>
+</header>
+
+<div class="searchbar">
+  <input id="search" class="search" placeholder="Cerca montagna, località o rifugio…">
+  <button class="btn" id="searchBtn">Cerca</button>
+</div>
+<div id="results" class="results"></div>
+<div id="status" class="status">Pronto · seleziona una località o usa GPS</div>
+<div id="offlineBar" class="status" style="margin-top:0;padding:7px 14px;border:1px solid var(--line);border-radius:10px;background:#0e1a2b">Offline mode: controllo connessione…</div>
+
+<main id="offline" class="page">
+<section class="card">
+ <div class="row"><h2>Offline Mountain Mode</h2><span id="offlineBadge" class="badge">PRONTO</span></div>
+ <div class="notice">I dati già caricati vengono conservati localmente. Senza rete puoi continuare a vedere GPX, posizione GPS, ultima previsione disponibile e timeline salvata. I dati non vengono aggiornati finché non torna la connessione.</div>
+ <div class="stormgrid" style="margin-top:10px">
+  <div class="stormbox"><b id="offlineState">—</b><span class="small">connessione</span></div>
+  <div class="stormbox"><b id="offlineWeather">—</b><span class="small">ultimo meteo</span></div>
+  <div class="stormbox"><b id="offlineGpx">—</b><span class="small">GPX locale</span></div>
+ </div>
+ <div class="tlControls"><button class="btn" id="offlineSave">Salva snapshot</button><button class="btn" id="offlineExport">Esporta dati offline</button><button class="btn" id="offlineImport">Importa snapshot</button></div>
+ <input id="offlineFile" type="file" accept="application/json" style="display:none">
+ <div id="offlineDetail" class="tlInfo">—</div>
+</section>
+<section class="card"><h2>Cosa resta disponibile</h2><div class="notice">GPX importato · ultimo meteo salvato · dati percorso disponibili · timeline generata · posizione GPS nel browser. Radar e nuove previsioni richiedono connessione.</div></section>
+</main>
+
+<main id="briefing" class="page active">
+<section class="card hero">
+ <div class="row"><div><h1>Mountain Briefing</h1><div class="alt" id="briefPlace">—</div></div><span id="briefData" class="badge">—</span></div>
+ <div id="briefHeadline" class="notice" style="margin-top:12px">Carica una località per generare il briefing.</div>
+</section>
+<section class="card"><div class="row"><h2>Quadro rapido</h2><span id="briefUpdated" class="small">—</span></div>
+ <div class="briefgrid" style="margin-top:10px">
+  <div id="briefWindCard" class="briefcard"><b id="briefWind">—</b><span>vento / raffiche</span></div>
+  <div id="briefStormCard" class="briefcard"><b id="briefStorm">—</b><span>temporali / CAPE</span></div>
+  <div id="briefRainCard" class="briefcard"><b id="briefRain">—</b><span>precipitazioni</span></div>
+  <div id="briefTempCard" class="briefcard"><b id="briefTemp">—</b><span>temperatura / zero termico</span></div>
+ </div>
+</section>
+<section class="card"><div class="row"><h2>Finestre da controllare</h2><span class="small">prossime 72 h</span></div><div id="briefWindows" class="brieflist">—</div></section>
+<section class="card"><div class="row"><h2>Percorso</h2><span id="briefRouteBadge" class="badge">NESSUN GPX</span></div><div id="briefRoute" class="notice">Importa un GPX per aggiungere tempi di passaggio e punti critici.</div></section>
+<section class="card"><div class="row"><h2>Qualità dati</h2></div><div id="briefSources" class="brieflist">—</div><div class="small" style="margin-top:10px">Il briefing sintetizza dati previsionali e analisi sperimentali. Non sostituisce bollettini ufficiali, osservazioni locali o valutazioni sul terreno.</div></section>
+</main>
+
+<main id="home" class="page">
+<section class="card hero">
+ <div class="row"><div><h1 id="placeName">Monte Bianco</h1><div class="alt" id="placeAlt">3.842 m · demo iniziale</div></div><span id="sourceBadge" class="badge off">DEMO</span></div>
+ <div class="temp" id="temp">—</div><div class="small" id="feels">Percepita — · —</div>
+ <div class="metricgrid">
+  <div class="metric"><b id="wind">—</b><span id="windDir">vento</span></div>
+  <div class="metric"><b id="gust">—</b><span>raffiche</span></div>
+  <div class="metric"><b id="humidity">—</b><span>umidità</span></div>
+  <div class="metric"><b id="pressure">—</b><span>pressione</span></div>
+  <div class="metric"><b id="cloud">—</b><span>nuvole</span></div>
+  <div class="metric"><b id="precip">—</b><span>precipitazioni</span></div>
+ </div>
+</section>
+
+<section class="card">
+ <div class="row"><h2>Situazione</h2><span id="alertBadge" class="badge">DATI REALI</span></div>
+ <div id="situation" class="notice">Carica una località per leggere la situazione meteorologica.</div>
+</section>
+
+<section class="card">
+ <div class="row"><h2>Grafico rapido</h2><select class="select" id="metricSelect">
+  <option value="temp">Temperatura</option><option value="wind">Vento</option><option value="pressure">Pressione</option><option value="humidity">Umidità</option><option value="precip">Precipitazioni</option>
+ </select></div>
+ <canvas id="homeChart" class="chart"></canvas><div class="axis" id="homeAxis"></div>
+</section>
+</main>
+
+<main id="charts" class="page">
+<section class="card">
+ <div class="row"><h2>Grafici meteorologici</h2><select class="select" id="range"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select></div>
+ <div class="tabs" id="tabs"></div>
+ <canvas id="bigChart" class="chart" style="height:250px"></canvas><div class="axis" id="bigAxis"></div>
+ <div style="margin-top:12px"><div class="row"><span class="small">Ora selezionata</span><b id="selectedTime">—</b></div><div id="selectedValue" class="small" style="margin-top:5px">—</div></div>
+ <input id="timeSlider" class="slider" type="range" min="0" max="23" value="0">
+</section>
+<section class="card">
+ <div class="row"><h2>Quota</h2><b id="altLabel">—</b></div>
+ <div class="small">La quota modifica il downscaling meteorologico della previsione.</div>
+ <input id="altSlider" class="slider" type="range" min="0" max="6000" step="50" value="0">
+ <button class="btn" id="reloadAltitude" style="margin-top:8px;width:100%">Aggiorna previsione a questa quota</button>
+</section>
+</main>
+
+
+
+<main id="alerts" class="page">
+<section class="card">
+ <div class="row"><h2>Allerte dinamiche</h2><span id="alertCount" class="badge">0</span></div>
+ <div class="small" style="margin-bottom:10px">Analisi automatica delle variazioni previste. Le soglie sono informative e non sostituiscono bollettini ufficiali.</div>
+ <div id="alertsList"></div>
+</section>
+<section class="card">
+ <h2>Finestra critica</h2>
+ <div id="criticalWindow" class="notice">Caricamento analisi…</div>
+</section>
+<section class="card">
+ <h2>Cosa ha generato l'avviso?</h2>
+ <div class="notice">Ogni avviso mostra variabile, valore previsto, variazione e intervallo temporale. Questo rende il sistema verificabile e evita un generico “meteo pericoloso”.</div>
+</section>
+</main>
+
+<main id="vertical" class="page">
+<section class="card">
+ <div class="row"><h2>Profilo meteo verticale</h2><select class="select" id="verticalMetric">
+  <option value="temp">Temperatura</option><option value="wind">Vento</option><option value="gust">Raffiche</option><option value="humidity">Umidità</option><option value="pressure">Pressione</option>
+ </select></div>
+ <div class="small" style="margin-bottom:10px">Confronto della previsione ai diversi livelli di quota.</div>
+ <canvas id="verticalChart" class="chart" style="height:290px"></canvas>
+ <div class="axis" id="verticalAxis"></div>
+</section>
+<section class="card">
+ <div class="row"><h2>Quote critiche</h2><span class="badge">PROFILO</span></div>
+ <div id="verticalCards"></div>
+</section>
+<section class="card">
+ <h2>Zero termico</h2>
+ <div class="notice" id="freezingInfo">Calcolo in corso…</div>
+</section>
+<section class="card">
+ <h2>Come leggerlo</h2>
+ <div class="notice">La temperatura tende a diminuire salendo, ma inversioni e condizioni locali possono modificare il profilo. Vento e raffiche possono aumentare rapidamente con l'esposizione e la quota. Usa sempre anche osservazioni locali e bollettini ufficiali.</div>
+</section>
+</main>
+
+<main id="route" class="page">
+<section class="card"><div class="row"><h2>Meteo sul percorso</h2><button class="btn" id="gpxBtn">Importa GPX</button></div>
+ <input id="gpxFile" type="file" accept=".gpx,application/gpx+xml" style="display:none">
+ <div class="row" style="margin:8px 0"><label class="small">Velocità salita <b id="speedLabel">3.5 km/h</b></label></div>
+ <input id="speedSlider" class="slider" type="range" min="1" max="6" step=".1" value="3.5">
+ <p class="small">Il tempo viene stimato usando distanza + dislivello positivo, così la previsione viene associata all'orario previsto di passaggio.</p>
+ <div id="routeList"></div>
+</section>
+<section class="card"><h2>Rischio sul percorso</h2><div id="routeRiskPanel" class="notice">Importa un GPX per colorare i segmenti in base alla previsione temporalesca all'orario stimato di passaggio.</div><div class="legend" style="display:flex;gap:12px;flex-wrap:wrap"><span>🟢 basso</span><span>🟠 da monitorare</span><span>🔴 elevato</span><span>⚪ dati non disponibili</span></div><div class="small">Colori basati su CAPE, codice meteo, precipitazioni e raffiche previsti. Non sono una misura certificata del rischio né una misura della distanza da una cella radar.</div></section>
+</main>
+
+
+<main id="storms" class="page">
+<section class="card">
+ <div class="row"><h2>Temporali</h2><span id="stormBadge" class="badge">ANALISI</span></div>
+ <div class="small" style="margin-bottom:10px">Stima della convezione prevista usando CAPE, codice meteo, precipitazioni e raffiche. Non è una rilevazione di fulmini in tempo reale.</div>
+ <div class="stormgrid">
+  <div class="stormbox"><b id="stormCape">—</b><span class="small">CAPE</span></div>
+  <div class="stormbox"><b id="stormLpi">—</b><span class="small">LPI</span></div>
+  <div class="stormbox"><b id="stormCode">—</b><span class="small">codice meteo</span></div>
+ </div>
+</section>
+<section class="card">
+ <h2>Finestra temporalesca prevista</h2>
+ <div id="stormWindow" class="notice">Caricamento…</div>
+ <div id="stormTimeline" style="margin-top:10px"></div>
+</section>
+<section class="card">
+ <h2>Backend operativo</h2>
+ <div class="small">Inserisci l'URL del backend V8 per attivare il relay lightning e centralizzare le chiamate meteo.</div>
+ <div class="row" style="margin-top:9px"><input id="backendUrl" placeholder="https://tuo-backend.example.com" style="flex:1"><button class="btn" id="saveBackend">Salva</button></div>
+ <div id="backendState" class="legend"></div>
+</section>
+<section class="card">
+ <div class="row"><h2>Fulminazioni</h2><span id="lightningBadge" class="badge">NON CONNESSO</span></div>
+ <div class="small" style="margin-bottom:10px">Pannello predisposto per fulminazioni osservate in tempo reale. Nessuna fulminazione viene simulata.</div>
+ <div id="lightningBox" class="notice">Per V7 il feed lightning resta disattivato nel client pubblico: le reti Blitzortung/LightningMaps non espongono un'API ufficiale stabile per un'applicazione commerciale. Il pannello è pronto per un relay backend autorizzato.</div>
+ <div id="lightningStats" class="stormgrid" style="margin-top:10px">
+  <div class="stormbox"><b id="strikeCount">0</b><span class="small">strike recenti</span></div>
+  <div class="stormbox"><b id="nearestStrike">—</b><span class="small">distanza minima</span></div>
+  <div class="stormbox"><b id="strikeAge">—</b><span class="small">ultimo dato</span></div>
+ </div>
+</section>
+<section class="card">
+ <div class="row"><h2>Storm Tracking</h2><span id="trackBadge" class="badge">ANALISI</span></div>
+ <div class="small">Confronta la previsione convettiva con i punti del GPX e stima la distanza dalla zona temporalesca. I risultati sono indicativi.</div>
+ <div class="stormgrid" style="margin-top:10px">
+  <div class="stormbox"><b id="trackMinDist">—</b><span class="small">distanza minima</span></div>
+  <div class="stormbox"><b id="trackClosest">—</b><span class="small">punto più vicino</span></div>
+  <div class="stormbox"><b id="trackWindow">—</b><span class="small">finestra</span></div>
+ </div>
+ <div id="trackDetail" class="notice" style="margin-top:10px">Importa un GPX e attendi l'aggiornamento meteo.</div>
+</section>
+<section class="card">
+ <h2>Integrazione con il percorso</h2>
+ <div id="routeStorm" class="notice">Importa un GPX per confrontare la finestra temporalesca con gli orari stimati di passaggio.</div>
+</section>
+</main>
+
+
+<main id="tracker" class="page">
+<section class="card">
+ <div class="row"><h2>Storm Cell Tracker</h2><span id="cellBadge" class="badge">ANALISI</span></div>
+ <div class="small">Stima sperimentale del movimento delle aree radar tra frame successivi. Non identifica automaticamente una singola cella convettiva.</div>
+ <div class="stormgrid" style="margin-top:10px">
+  <div class="stormbox"><b id="cellCount">—</b><span class="small">celle ultimo frame</span></div>
+  <div class="stormbox"><b id="cellSpeed">—</b><span class="small">velocità stimata</span></div>
+  <div class="stormbox"><b id="cellBearing">—</b><span class="small">direzione</span></div>
+  <div class="stormbox"><b id="cellAge">—</b><span class="small">ultimo frame</span></div>
+ </div>
+ <div id="cellForecast" class="notice" style="margin-top:10px">Apri Radar per acquisire i frame osservati.</div>
+</section>
+<section class="card">
+ <h2>Traiettoria prevista</h2>
+ <div id="cellProjection" class="notice">Esegui “Analizza celle” dalla pagina Radar per proiettare il movimento osservato fino a 60 minuti.</div>
+ <div class="small" style="margin-top:8px">La linea è una proiezione lineare della velocità/direzione osservata: non rappresenta un nowcast meteorologico ufficiale.</div>
+</section>
+<section class="card">
+ <h2>Intersezione con GPX</h2>
+ <div id="cellRoute" class="notice">Importa un GPX per stimare quando un'area radar in movimento potrebbe avvicinarsi alla rotta.</div>
+</section>
+<section class="card">
+ <h2>Metodo</h2>
+ <div class="notice">V12 segmenta i ritorni radar osservati, collega le celle tra frame consecutivi, converte il movimento in km/h e direzione e verifica la distanza dalla rotta GPX. È analisi osservativa, non un nowcast futuro.</div>
+</section>
+</main>
+<main id="map" class="page">
+<section class="card"><div class="row"><h2>Radar precipitazioni</h2><div><button class="btn" id="radarPrev">‹</button> <button class="btn" id="radarPlay">▶</button> <button class="btn" id="radarNext">›</button> <button class="btn" id="radarRefresh">↻</button></div></div>
+ <div class="small" style="margin-bottom:10px">Radar osservato delle ultime 2 ore, aggiornato con frame a intervalli di circa 10 minuti.</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px"><button class="btn" id="trackCellsBtn">Analizza celle</button><button class="btn" id="trackAutoBtn">Auto-refresh</button></div><div id="trackingStatus" class="legend" style="margin-top:8px">Backend V12 non ancora interrogato.</div>
+ <div id="radarMap" class="radar"></div>
+ <div id="radarStatus" class="legend">Caricamento radar…</div><div id="radarFrame" class="legend"></div>
+</section>
+<section class="card"><h2>Posizione</h2><div class="notice" id="coords">Nessuna posizione selezionata.</div></section>
+<section class="card"><h2>Nota sul radar</h2><div class="notice">Il radar mostra precipitazioni osservate recenti e può essere riprodotto frame per frame. Non viene trasformato in una previsione futura: il nowcast gratuito RainViewer è stato rimosso dal 2026.</div></section>
+</main>
+
+<div class="footer">
+ Fonti: Open-Meteo per le previsioni · RainViewer per il radar osservato. Le previsioni sono dati modellistici e non sostituiscono bollettini ufficiali, guide locali o valutazioni sul terreno.
+</div>
+</div>
+<main id="timeline" class="page">
+<section class="card">
+ <div class="row"><h2>Mountain Weather Timeline</h2><span class="badge">QUOTA × TEMPO</span></div>
+ <div class="small">La matrice sincronizza il percorso GPX con l'orario stimato di passaggio. Ogni cella combina temperatura, vento, raffiche, precipitazioni e indicatore temporalesco.</div>
+ <div class="tlControls"><button class="btn" id="tl24">24 h</button><button class="btn" id="tl48">48 h</button><button class="btn" id="tlRoute">Percorso</button><button class="btn" id="tlRefresh">↻ Aggiorna</button></div>
+ <div id="timelineGrid" class="timelineGrid"><canvas id="timelineCanvas" width="900" height="520"></canvas></div>
+ <div class="timelineLegend"><span><i class="tlDot" style="background:#62d5a0"></i>condizioni contenute</span><span><i class="tlDot" style="background:#ffc857"></i>da monitorare</span><span><i class="tlDot" style="background:#ff7b7b"></i>trigger elevato</span><span><i class="tlDot" style="background:#67b7ff"></i>pioggia/neve</span></div>
+</section>
+<section class="card"><h2>Punto selezionato</h2><div id="timelineInfo" class="tlInfo">Tocca una cella della timeline per vedere quota, chilometro, orario previsto e condizioni.</div></section>
+<section class="card"><h2>Temporali e radar</h2><div id="timelineStormInfo" class="tlInfo">Il radar osservato e la sua proiezione vengono riportati separatamente: la proiezione lineare non è un nowcast ufficiale.</div></section>
+</main>
+<nav class="nav"><button class="active" data-page="briefing">▣<br>Briefing</button><button data-page="home">⌂<br>Oggi</button><button data-page="charts">⌁<br>Grafici</button><button data-page="route">🥾<br>Percorso</button><button data-page="vertical">↕<br>Quota</button><button data-page="alerts">⚠<br>Allerte</button><button data-page="storms">⚡<br>Temporali</button><button data-page="tracker">↗<br>Tracker</button><button data-page="timeline">▦<br>Timeline</button><button data-page="offline">⇩<br>Offline</button><button data-page="map">◈<br>Radar</button></nav>
+
+<script>
+const API='https://api.open-meteo.com/v1/forecast';
+const GEO='https://geocoding-api.open-meteo.com/v1/search';
+const CACHE='alpine-weather-v2-cache';
+let routePoints=[]; let routeForecast=[]; let verticalData=[]; let state={lat:45.8326,lon:6.8652,elevation:3842,name:'Monte Bianco',country:'',timezone:'auto',weather:null,metric:'temp',hours:24};
+const meta={
+ temp:['Temperatura','°C','temperature_2m'], wind:['Vento','km/h','wind_speed_10m'],
+ pressure:['Pressione','hPa','surface_pressure'], humidity:['Umidità','%','relative_humidity_2m'],
+ precip:['Precipitazioni','mm','precipitation']
+};
+
+function fmt(n,d=0){return Number.isFinite(+n)?Number(n).toFixed(d):'—'}
+function dir(deg){if(!Number.isFinite(+deg))return 'vento';const a=['N','NE','E','SE','S','SO','O','NO'];return a[Math.round(deg/45)%8]}
+function localHour(iso){return new Date(iso).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}
+function setStatus(t){document.getElementById('status').textContent=t}
+function save(){localStorage.setItem(CACHE,JSON.stringify(state))}
+function loadCache(){try{const x=JSON.parse(localStorage.getItem(CACHE));if(x&&x.weather){state=x;setStatus('Ultimi dati salvati localmente');return true}}catch(e){}return false}
+
+function buildUrl(){
+ const vars=['temperature_2m','apparent_temperature','relative_humidity_2m','precipitation','snowfall','cloud_cover','wind_speed_10m','wind_gusts_10m','wind_direction_10m','surface_pressure','cape','weather_code'];
+ const p=new URLSearchParams({latitude:state.lat,longitude:state.lon,elevation:state.elevation,timezone:'auto',forecast_days:'7',hourly:vars.join(','),wind_speed_unit:'kmh',precipitation_unit:'mm'});
+ return API+'?'+p;
+}
+async function fetchWeather(){
+ setStatus('Aggiornamento dati meteo…');
+ try{
+   const r=await fetch(buildUrl()); if(!r.ok) throw new Error('HTTP '+r.status);
+   state.weather=await r.json(); state.timezone=state.weather.timezone||'auto'; save();
+   renderAll(); loadVertical(); renderAlerts(); renderStorms(); setStatus('Aggiornato · '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
+ }catch(e){
+   if(state.weather){renderAll();loadVertical();renderAlerts();renderStorms();setStatus('Offline · visualizzati gli ultimi dati salvati')}
+   else {setStatus('Errore nel caricamento dei dati');}
+ }
+}
+async function geocode(q){
+ const r=await fetch(GEO+'?name='+encodeURIComponent(q)+'&count=6&language=it&format=json');
+ if(!r.ok)throw new Error('geo'); return (await r.json()).results||[];
+}
+function showResults(items){
+ const el=document.getElementById('results');el.innerHTML='';
+ items.forEach(x=>{const b=document.createElement('button');b.className='result';b.textContent=`${x.name}${x.admin1?', '+x.admin1:''} · ${x.country||''} · ${Math.round(x.elevation||0)} m`;b.onclick=()=>{state.lat=x.latitude;state.lon=x.longitude;state.elevation=Math.round(x.elevation||0);state.name=x.name;document.getElementById('results').innerHTML='';fetchWeather()};el.appendChild(b)})
+}
+document.getElementById('searchBtn').onclick=async()=>{const q=document.getElementById('search').value.trim();if(!q)return;try{showResults(await geocode(q));setStatus('Seleziona una località');}catch(e){setStatus('Ricerca non disponibile')}};
+document.getElementById('search').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('searchBtn').click()});
+document.getElementById('locBtn').onclick=()=>navigator.geolocation?.getCurrentPosition(async p=>{
+ state.lat=p.coords.latitude;state.lon=p.coords.longitude;
+ try{const r=await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${state.lat}&longitude=${state.lon}`);const j=await r.json();state.elevation=Math.round(j.elevation?.[0]||p.coords.altitude||0)}catch(e){state.elevation=Math.round(p.coords.altitude||0)}
+ state.name='La mia posizione';fetchWeather();
+},()=>setStatus('GPS non disponibile o permesso negato'));
+
+
+async function loadVertical(){
+ const base=Math.round(state.elevation||0);
+ const min=Math.max(0,Math.floor((base-1800)/100)*100);
+ const max=Math.min(6000,Math.ceil((base+1000)/100)*100);
+ const levels=[]; for(let q=min;q<=max;q+=200) levels.push(q);
+ // Open-Meteo accepts elevation as an explicit parameter for point downscaling.
+ // We request each altitude as a coordinate at the selected location.
+ try{
+   const urls=levels.map(q=>{
+     if(BACKEND_URL){
+ try{
+  state.weather=await backendJSON(`/weather?lat=${state.lat}&lon=${state.lon}`);
+  saveCache(); renderAll(); loadVertical(); renderAlerts(); renderStorms(); setStatus('Backend V8');
+  return;
+ }catch(e){}
+}
+const u=new URL(API);
+     u.searchParams.set('latitude',state.lat);u.searchParams.set('longitude',state.lon);
+     u.searchParams.set('elevation',q);u.searchParams.set('timezone','auto');
+     u.searchParams.set('forecast_days','1');
+     u.searchParams.set('hourly','temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,surface_pressure,precipitation');
+     u.searchParams.set('wind_speed_unit','kmh');u.searchParams.set('precipitation_unit','mm');
+     return fetch(u).then(r=>r.json());
+   });
+   const results=await Promise.all(urls);
+   verticalData=levels.map((q,i)=>({q,w:results[i].hourly}));
+   renderVertical();
+ }catch(e){document.getElementById('freezingInfo').textContent='Profilo verticale non disponibile in questo momento.'}
+}
+function renderVertical(){
+ const metric=document.getElementById('verticalMetric').value;
+ const c=document.getElementById('verticalChart'); if(!verticalData.length)return;
+ const vals=verticalData.map(x=>+x.w[metric==='temp'?'temperature_2m':metric==='wind'?'wind_speed_10m':metric==='gust'?'wind_gusts_10m':metric==='humidity'?'relative_humidity_2m':'surface_pressure'][0]);
+ const dpr=devicePixelRatio||1,w=c.clientWidth,ht=c.clientHeight||290;c.width=w*dpr;c.height=ht*dpr;
+ const ctx=c.getContext('2d');ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,ht);
+ const min=Math.min(...vals),max=Math.max(...vals),pad=25;
+ ctx.strokeStyle='#263850';ctx.lineWidth=1;
+ for(let i=1;i<5;i++){let y=pad+(ht-2*pad)*i/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ ctx.strokeStyle='#67b7ff';ctx.lineWidth=3;ctx.beginPath();
+ vals.forEach((v,i)=>{const x=pad+i*(w-2*pad)/Math.max(1,vals.length-1),y=ht-pad-(v-min)/(max-min||1)*(ht-2*pad);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+ vals.forEach((v,i)=>{const x=pad+i*(w-2*pad)/Math.max(1,vals.length-1),y=ht-pad-(v-min)/(max-min||1)*(ht-2*pad);ctx.fillStyle='#f4f7fb';ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill()});
+ const ax=document.getElementById('verticalAxis');ax.innerHTML='';
+ [0,Math.floor((verticalData.length-1)/2),verticalData.length-1].forEach(i=>{const z=document.createElement('span');z.textContent=verticalData[i].q.toLocaleString('it-IT')+' m';ax.appendChild(z)});
+ const cards=document.getElementById('verticalCards');cards.innerHTML='';
+ const picks=[0,Math.floor((verticalData.length-1)/2),verticalData.length-1];
+ [...new Set(picks)].forEach(i=>{
+   const x=verticalData[i],w=x.w;
+   const el=document.createElement('div');el.className='routepoint';
+   el.innerHTML=`<span class="dot"></span><div><b>${x.q.toLocaleString('it-IT')} m</b><div class="small">${fmt(w.temperature_2m[0],1)}°C · vento ${fmt(w.wind_speed_10m[0],0)} km/h · raffiche ${fmt(w.wind_gusts_10m[0],0)} km/h · umidità ${fmt(w.relative_humidity_2m[0],0)}%</div></div>`;
+   cards.appendChild(el);
+ });
+ // Estimate freezing level from temperatures around 0°C.
+ let freeze='non stimabile';
+ for(let i=1;i<verticalData.length;i++){
+   const a=verticalData[i-1],b=verticalData[i],ta=+a.w.temperature_2m[0],tb=+b.w.temperature_2m[0];
+   if((ta>=0&&tb<=0)||(ta<=0&&tb>=0)){const f=a.q+(0-ta)*(b.q-a.q)/(tb-ta||1);freeze=Math.round(f/10)*10;break}
+ }
+ document.getElementById('freezingInfo').textContent=freeze==='non stimabile'?'Zero termico fuori dal profilo visualizzato.':`Zero termico stimato ≈ ${freeze.toLocaleString('it-IT')} m sulla previsione corrente.`;
+}
+document.getElementById('verticalMetric').onchange=renderVertical;
+
+function analyzeAlerts(){
+ const h=state.weather?.hourly;if(!h)return [];
+ const a=[];
+ const n=Math.min(72,h.time.length);
+ const add=(level,title,why,idx)=>a.push({level,title,why,idx,time:h.time[idx]});
+ // Peak gusts
+ for(let i=1;i<n;i++){
+   const g0=+h.wind_gusts_10m[i-1],g=+h.wind_gusts_10m[i];
+   if(g>=80 && g0<80){add('high','Raffiche molto forti',`Raffiche previste intorno a ${Math.round(g)} km/h.`,i);break}
+   if(g>=60 && g0<60){add('med','Raffiche in aumento',`Le raffiche superano ${Math.round(g)} km/h.`,i);break}
+ }
+ // Rapid wind increase over 3h
+ for(let i=3;i<n;i++){
+   const delta=+h.wind_gusts_10m[i]-+h.wind_gusts_10m[i-3];
+   if(delta>=30){add('med','Aumento rapido delle raffiche',`+${Math.round(delta)} km/h in circa 3 ore.`,i);break}
+ }
+ // Heavy precipitation
+ for(let i=0;i<n;i++){
+   if(+h.precipitation[i]>=8){add('med','Precipitazioni intense',`${fmt(h.precipitation[i],1)} mm/h previsti.`,i);break}
+ }
+ // Temperature drop 6h
+ for(let i=6;i<n;i++){
+   const d=+h.temperature_2m[i]-+h.temperature_2m[i-6];
+   if(d<=-5){add('med','Calo termico rapido',`${Math.round(Math.abs(d))}°C in circa 6 ore.`,i);break}
+ }
+ // Pressure drop 6h
+ if(h.surface_pressure){
+  for(let i=6;i<n;i++){
+   const d=+h.surface_pressure[i]-+h.surface_pressure[i-6];
+   if(d<=-7){add('med','Pressione in calo',`${Math.round(Math.abs(d))} hPa in circa 6 ore.`,i);break}
+  }
+ }
+ // Thunderstorm proxy: heavy precip + gusts
+ for(let i=0;i<n;i++){
+   if(+h.precipitation[i]>=4 && +h.wind_gusts_10m[i]>=55){add('high','Possibile fase convettiva',`Pioggia ${fmt(h.precipitation[i],1)} mm/h e raffiche ${Math.round(h.wind_gusts_10m[i])} km/h nello stesso intervallo.`,i);break}
+ }
+ return a.sort((x,y)=>new Date(x.time)-new Date(y.time));
+}
+
+function stormAssessment(w, i){
+ const p=+w.precipitation?.[i]||0, gust=+w.wind_gusts_10m?.[i]||0, cape=+w.cape?.[i]||0, code=+w.weather_code?.[i]||0;
+ const thunder=code>=95 && code<=99;
+ let level='low';
+ if(thunder || cape>=1000 || (p>=8 && gust>=55)) level='high';
+ else if(cape>=500 || (p>=4 && gust>=45)) level='med';
+ return {level,p,gust,cape,code,thunder};
+}
+function renderStorms(){
+ const w=state.weather?.hourly;
+ if(!w || !w.time?.length) return;
+ const now=0, s=stormAssessment(w,now);
+ document.getElementById('stormCape').textContent=fmt(s.cape,0)+' J/kg';
+ document.getElementById('stormLpi').textContent='n/d';
+ document.getElementById('stormCode').textContent=String(s.code);
+ const badge=document.getElementById('stormBadge');
+ badge.className='badge '+(s.level==='high'?'warn':'');
+ badge.textContent=s.level==='high'?'ATTENZIONE':s.level==='med'?'MONITORARE':'BASSO';
+ const hits=[];
+ for(let i=0;i<Math.min(w.time.length,72);i++){
+   const x=stormAssessment(w,i);
+   if(x.level!=='low') hits.push({...x,time:w.time[i]});
+ }
+ const win=document.getElementById('stormWindow');
+ if(!hits.length) win.textContent='Nelle prossime 72 ore non emergono intervalli che superano le soglie informative di questa analisi.';
+ else{
+   const first=hits[0], last=hits[hits.length-1];
+   win.innerHTML=`Possibile attività convettiva tra <b>${localHour(first.time)}</b> e <b>${localHour(last.time)}</b>. Picco stimato: CAPE ${fmt(Math.max(...hits.map(x=>x.cape)),0)} J/kg. Verifica aggiornamenti successivi e fonti ufficiali.`;
+ }
+ const tl=document.getElementById('stormTimeline');
+ tl.innerHTML='';
+ hits.slice(0,8).forEach(x=>{
+   const d=document.createElement('div'); d.className='alertitem '+(x.level==='high'?'level-high':'level-med');
+   d.innerHTML=`<span class="alerttag">${x.level==='high'?'IMPORTANTE':'ATTENZIONE'}</span><strong>${localHour(x.time)}</strong><div>CAPE ${fmt(x.cape,0)} J/kg · pioggia ${fmt(x.p,1)} mm/h · raffiche ${fmt(x.gust,0)} km/h · WMO ${x.code}</div>`;
+   tl.appendChild(d);
+ });
+ renderRouteStorm();
+}
+
+function haversineKm(a,b,c,d){
+ const R=6371, p=Math.PI/180, x=(c-a)*p, y=(d-b)*p;
+ const q=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;
+ return 2*R*Math.asin(Math.sqrt(q));
+}
+
+function setupBackend(){
+ const input=document.getElementById('backendUrl'), stateEl=document.getElementById('backendState');
+ if(!input)return;
+ input.value=BACKEND_URL;
+ stateEl.textContent=BACKEND_URL?'Backend configurato':'Backend non configurato';
+ document.getElementById('saveBackend').onclick=()=>{
+   localStorage.setItem('alpineBackend',input.value.trim());
+   location.reload();
+ };
+}
+async function fetchLiveLightning(){
+ const box=document.getElementById('lightningBox');
+ if(!BACKEND_URL){updateLightningDemoState();return;}
+ try{
+   const d=await backendJSON(`/lightning?lat=${state.lat}&lon=${state.lon}&minutes=15`);
+   const raw=d.data||{};
+   const count=(raw.strike||raw.strikes||raw.data||[]).length;
+   document.getElementById('lightningBadge').textContent=d.enabled?'LIVE':'OFF';
+   document.getElementById('strikeCount').textContent=String(count);
+   document.getElementById('strikeAge').textContent='≤15 min';
+   box.innerHTML=d.enabled
+     ? `<b>Feed lightning collegato.</b> ${count} fulminazioni restituite nell'intervallo richiesto.`
+     : d.message;
+ }catch(e){
+   document.getElementById('lightningBadge').textContent='ERRORE';
+   box.textContent='Feed lightning non raggiungibile dal backend.';
+ }
+}
+
+function updateLightningDemoState(){
+ const badge=document.getElementById('lightningBadge');
+ if(badge) badge.textContent='RELAY BACKEND';
+ const box=document.getElementById('lightningBox');
+ if(box) box.innerHTML='Nessun feed live collegato. <b>0 strike</b> non significa assenza di fulmini: significa che il relay non è configurato.';
+ document.getElementById('strikeCount').textContent='0';
+ document.getElementById('nearestStrike').textContent='—';
+ document.getElementById('strikeAge').textContent='—';
+}
+
+function routeStormRadiusKm(x){
+  // Informative radius based on convective intensity, not a safety threshold.
+  if(x.cape>=1500 || x.thunder) return 15;
+  if(x.cape>=800 || x.p>=8) return 10;
+  if(x.cape>=400 || x.p>=4) return 6;
+  return 0;
+}
+function parseRouteLatLon(){
+  return routePoints.map(p=>({lat:+p.lat,lon:+p.lon,ele:+p.ele||0,dist:+p.dist||0}));
+}
+function stormTrackAnalysis(){
+ const out={hits:[],minDist:Infinity,closest:null,windowStart:null,windowEnd:null};
+ if(!routeForecast.length || !state.weather?.hourly) return out;
+ const route=parseRouteLatLon();
+ // Route forecast already carries nearest forecast hour; evaluate storm radius at that arrival time.
+ routeForecast.forEach((rf,idx)=>{
+   if(!rf.wx) return;
+   const s=stormAssessment(state.weather.hourly,rf.wx.i);
+   const radius=routeStormRadiusKm(s);
+   if(!radius) return;
+   const pt=route[Math.min(idx,route.length-1)];
+   // Since forecast is at the selected base coordinate, this is a conservative
+   // proximity-to-route indicator rather than a cell centroid track.
+   const d=haversineKm(state.lat,state.lon,pt.lat,pt.lon);
+   const hit={...rf,storm:s,radius,distance:d};
+   if(d<=radius){
+     out.hits.push(hit);
+     if(d<out.minDist){out.minDist=d;out.closest=hit;}
+     if(!out.windowStart || hit.when<out.windowStart)out.windowStart=hit.when;
+     if(!out.windowEnd || hit.when>out.windowEnd)out.windowEnd=hit.when;
+   }
+ });
+ return out;
+}
+function renderStormTracking(){
+ const badge=document.getElementById('trackBadge');
+ if(!badge)return;
+ const a=stormTrackAnalysis();
+ if(!routeForecast.length){
+   badge.textContent='GPX RICHIESTO';
+   document.getElementById('trackDetail').textContent='Importa un GPX per calcolare l'interferenza temporale con il percorso.';
+   return;
+ }
+ if(!a.hits.length){
+   badge.textContent='NESSUNA SOVRAPPOSIZIONE';
+   document.getElementById('trackMinDist').textContent='—';
+   document.getElementById('trackClosest').textContent='—';
+   document.getElementById('trackWindow').textContent='—';
+   document.getElementById('trackDetail').textContent='Nessun punto della rotta rientra nella zona convettiva indicativa calcolata dalla previsione corrente.';
+   return;
+ }
+ badge.textContent='MONITORARE';
+ const c=a.closest;
+ document.getElementById('trackMinDist').textContent=a.minDist.toFixed(1)+' km';
+ document.getElementById('trackClosest').textContent=Math.round(c.ele||0)+' m';
+ document.getElementById('trackWindow').textContent=a.windowStart.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+ document.getElementById('trackDetail').innerHTML=
+   `La previsione mostra una possibile sovrapposizione con la rotta tra <b>${a.windowStart.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</b> e <b>${a.windowEnd.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</b>. `+
+   `Il punto più vicino è a circa <b>${a.minDist.toFixed(1)} km</b> dalla posizione usata per la previsione, con CAPE ${fmt(c.storm.cape,0)} J/kg e raffiche ${fmt(c.storm.gust,0)} km/h. `+
+   `<br><span class="small">Questa è una stima di sovrapposizione spazio-temporale, non la traiettoria osservata di una cella.</span>`;
+}
+function renderRouteRiskPanel(){
+ const el=document.getElementById('routeRiskPanel'); if(!el)return;
+ if(!routeForecast.length){el.textContent='Importa un GPX per valutare i segmenti.';return;}
+ const counts={low:0,med:0,high:0,unknown:0};
+ routeForecast.forEach(p=>{if(!p.wx){counts.unknown++;return;}counts[stormAssessment(state.weather.hourly,p.wx.i).level]++;});
+ const high=routeForecast.filter(p=>p.wx&&stormAssessment(state.weather.hourly,p.wx.i).level==='high');
+ const med=routeForecast.filter(p=>p.wx&&stormAssessment(state.weather.hourly,p.wx.i).level==='med');
+ const fmtTime=p=>p.when.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+ const window=high.length?`Segmenti con indicatore elevato: ${fmtTime(high[0])}–${fmtTime(high[high.length-1])}.`:(med.length?`Segmenti da monitorare: ${fmtTime(med[0])}–${fmtTime(med[med.length-1])}.`:'Nessun segmento supera le soglie informative correnti.');
+ el.innerHTML=`<b>Segmenti analizzati:</b> ${routeForecast.length}<br>🟢 ${counts.low} · 🟠 ${counts.med} · 🔴 ${counts.high} · ⚪ ${counts.unknown}<br>${window}<br><span class="small">Orari e livelli dipendono dalla velocità di marcia impostata e dall'aggiornamento del modello meteo.</span>`;
+}
+function routeRiskLevel(p){if(!p?.wx)return 'unknown';return stormAssessment(state.weather.hourly,p.wx.i).level;}
+function renderRouteStorm(){
+ const box=document.getElementById('routeStorm');
+ if(!box)return;
+ if(!routeForecast.length){box.textContent='Importa un GPX per confrontare la finestra temporalesca con gli orari stimati di passaggio.';renderStormTracking();return;}
+ const hits=routeForecast.filter(p=>p.wx && stormAssessment(state.weather.hourly,p.wx.i).level!=='low');
+ if(!hits.length){box.textContent='Nessun punto del percorso coincide, secondo la previsione corrente, con una finestra temporalesca sopra soglia.';renderStormTracking();return;}
+ const first=hits[0], last=hits[hits.length-1];
+ box.innerHTML=`La previsione corrente segnala una sovrapposizione con il percorso tra circa <b>${first.when.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</b> e <b>${last.when.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</b>. Quote interessate: circa ${Math.round(first.ele||0)}–${Math.round(last.ele||0)} m.`; renderStormTracking();
+}
+
+function renderAlerts(){
+ const a=analyzeAlerts(),list=document.getElementById('alertsList'); if(!list)return;
+ document.getElementById('alertCount').textContent=a.length;
+ list.innerHTML=a.length?'':'<div class="notice">Nessuna variazione che supera le soglie informative nelle prossime 72 ore. Continua a controllare l'evoluzione e le fonti ufficiali.</div>';
+ a.forEach(x=>{
+   const d=document.createElement('div');d.className='alertitem level-'+x.level;
+   const label=x.level==='high'?'IMPORTANTE':x.level==='med'?'ATTENZIONE':'INFO';
+   d.innerHTML=`<span class="alerttag">${label}</span><strong>${x.title}</strong><div>${x.why}</div><div class="why">${localHour(x.time)} · ${new Date(x.time).toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'})}</div>`;
+   list.appendChild(d);
+ });
+ if(a.length){
+   const first=a[0], last=a[a.length-1];
+   document.getElementById('criticalWindow').textContent=`Prima variazione significativa: ${first.title.toLowerCase()} alle ${localHour(first.time)}. Gli avvisi sono basati sulla previsione oraria corrente e possono cambiare con gli aggiornamenti del modello.`;
+ }else document.getElementById('criticalWindow').textContent='Non è stata rilevata una finestra critica secondo le soglie informative attuali.';
+}
+function briefLevel(cls, el){el.className='briefcard '+cls;}
+function renderBriefing(){
+ const w=state.weather?.hourly; if(!w)return;
+ const n=Math.min(24,w.time.length||0), vals=(key)=>w[key]?.slice(0,n).map(Number).filter(Number.isFinite)||[];
+ const gust=vals('wind_gusts_10m'), precip=vals('precipitation'), cape=vals('cape'), temp=vals('temperature_2m');
+ const maxG=Math.max(...gust,0), maxP=Math.max(...precip,0), maxC=Math.max(...cape,0), minT=Math.min(...temp,0);
+ const rainTotal=precip.reduce((a,b)=>a+b,0);
+ document.getElementById('briefPlace').textContent=`${state.name} · ${Math.round(state.elevation).toLocaleString('it-IT')} m`;
+ document.getElementById('briefData').textContent='PREVISIONE';
+ document.getElementById('briefData').className='badge';
+ document.getElementById('briefUpdated').textContent=w.time?.[0]?`prima ora ${localHour(w.time[0])}`:'—';
+ document.getElementById('briefWind').textContent=`${fmt(w.wind_speed_10m?.[0],0)} / ${fmt(maxG,0)} km/h`;
+ document.getElementById('briefStorm').textContent=`CAPE max ${fmt(maxC,0)} J/kg`;
+ document.getElementById('briefRain').textContent=`${fmt(rainTotal,1)} mm / 24h`;
+ document.getElementById('briefTemp').textContent=`${fmt(w.temperature_2m?.[0],0)}°C · min ${fmt(minT,0)}°C`;
+ briefLevel(maxG>=80?'brief-high':maxG>=60?'brief-watch':'brief-ok',document.getElementById('briefWindCard'));
+ briefLevel(maxC>=1000?'brief-high':maxC>=500?'brief-watch':'brief-ok',document.getElementById('briefStormCard'));
+ briefLevel(maxP>=8?'brief-high':maxP>=4?'brief-watch':'brief-ok',document.getElementById('briefRainCard'));
+ briefLevel(minT<=-5?'brief-watch':'brief-ok',document.getElementById('briefTempCard'));
+ let headline='Finestra senza soglie informative elevate nelle prossime 24 ore.';
+ if(maxG>=80 || maxP>=8 || maxC>=1000) headline='Sono presenti finestre da controllare: vento, precipitazioni o attività convettiva raggiungono soglie informative elevate.';
+ else if(maxG>=60 || maxP>=4 || maxC>=500) headline='Alcuni parametri richiedono monitoraggio durante la finestra prevista.';
+ document.getElementById('briefHeadline').textContent=headline;
+ const wins=[];
+ for(let i=0;i<n;i++){
+   const reasons=[]; if(Number(w.wind_gusts_10m?.[i])>=60) reasons.push(`raffiche ${fmt(w.wind_gusts_10m[i],0)} km/h`); if(Number(w.precipitation?.[i])>=4) reasons.push(`pioggia ${fmt(w.precipitation[i],1)} mm/h`); if(Number(w.cape?.[i])>=500) reasons.push(`CAPE ${fmt(w.cape[i],0)}`);
+   if(reasons.length) wins.push({i,reasons});
+ }
+ const wl=document.getElementById('briefWindows'); wl.innerHTML='';
+ if(!wins.length) wl.innerHTML='<div class="notice">Nessuna finestra supera le soglie informative configurate.</div>';
+ else wins.slice(0,8).forEach(x=>{const d=document.createElement('div');d.className='briefrow';d.innerHTML=`<span>${localHour(w.time[x.i])}</span><span>${x.reasons.join(' · ')}</span>`;wl.appendChild(d)});
+ const rb=document.getElementById('briefRoute');
+ if(routeForecast.length){ const high=routeForecast.filter(p=>p.wx&&routeRiskLevel(p)==='high').length, med=routeForecast.filter(p=>p.wx&&routeRiskLevel(p)==='med').length; document.getElementById('briefRouteBadge').textContent=`${(routeForecast.at(-1).dist/1000).toFixed(1)} km`; rb.innerHTML=`<b>Punti analizzati:</b> ${routeForecast.length}<br>🔴 ${high} · 🟠 ${med}<br><span class="small">Tempo stimato: ${Math.round(routeForecast.at(-1).minutes)} min · D+ ${Math.round(routeForecast.at(-1).up)} m</span>`; }
+ else {document.getElementById('briefRouteBadge').textContent='NESSUN GPX';}
+ document.getElementById('briefSources').innerHTML=`<div class="briefrow"><span>Meteo</span><span>Open-Meteo · ${w.time?.[0]||'—'}</span></div><div class="briefrow"><span>Posizione</span><span>${Number.isFinite(state.lat)?state.lat.toFixed(3)+', '+state.lon.toFixed(3):'—'}</span></div><div class="briefrow"><span>Radar</span><span>${navigator.onLine?'disponibile online':'solo dati salvati'}</span></div>`;
+}
+function renderHome(){
+ const w=state.weather,h=w?.hourly;if(!h)return;
+ const now=0;
+ document.getElementById('placeName').textContent=state.name;
+ document.getElementById('placeAlt').textContent=`${Number(state.elevation).toLocaleString('it-IT')} m · ${w.timezone||''}`;
+ document.getElementById('sourceBadge').textContent='DATI REALI';
+ document.getElementById('sourceBadge').className='badge';
+ document.getElementById('temp').textContent=fmt(h.temperature_2m[now],0)+'°C';
+ document.getElementById('feels').textContent=`Percepita ${fmt(h.apparent_temperature[now],0)}°C · ${localHour(h.time[now])}`;
+ document.getElementById('wind').textContent=fmt(h.wind_speed_10m[now],0)+' km/h';
+ document.getElementById('windDir').textContent='vento '+dir(h.wind_direction_10m[now]);
+ document.getElementById('gust').textContent=fmt(h.wind_gusts_10m[now],0)+' km/h';
+ document.getElementById('humidity').textContent=fmt(h.relative_humidity_2m[now],0)+'%';
+ document.getElementById('pressure').textContent=fmt(h.surface_pressure[now],0)+' hPa';
+ document.getElementById('cloud').textContent=fmt(h.cloud_cover[now],0)+'%';
+ document.getElementById('precip').textContent=fmt(h.precipitation[now],1)+' mm';
+ const nextWind=Math.max(...h.wind_gusts_10m.slice(0,12).map(Number));
+ document.getElementById('situation').textContent=nextWind>70?`Raffiche fino a ${fmt(nextWind,0)} km/h nelle prossime 12 ore: controllare l'evoluzione prima di partire.`:`Nelle prossime ore: raffiche massime ${fmt(nextWind,0)} km/h. Verificare sempre anche i bollettini ufficiali locali.`;
+ document.getElementById('coords').textContent=`${state.lat.toFixed(5)}, ${state.lon.toFixed(5)} · quota ${Math.round(state.elevation)} m`;
+ draw(document.getElementById('homeChart'),state.metric,24);
+}
+function draw(canvas,key,count){
+ const h=state.weather?.hourly;if(!h)return; const arr=h[meta[key][2]]?.slice(0,count)||[]; if(!arr.length)return;
+ const labels=h.time.slice(0,count); const dpr=devicePixelRatio||1,w=canvas.clientWidth,ht=canvas.clientHeight||200;canvas.width=w*dpr;canvas.height=ht*dpr;
+ const c=canvas.getContext('2d');c.scale(dpr,dpr);c.clearRect(0,0,w,ht);
+ const nums=arr.map(Number),min=Math.min(...nums),max=Math.max(...nums),pad=18;c.strokeStyle='#263850';c.lineWidth=1;
+ for(let i=1;i<4;i++){let y=pad+(ht-2*pad)*i/4;c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke()}
+ c.strokeStyle='#67b7ff';c.lineWidth=3;c.beginPath();
+ nums.forEach((v,i)=>{let x=pad+i*(w-2*pad)/Math.max(1,nums.length-1);let y=ht-pad-(v-min)/(max-min||1)*(ht-2*pad);i?c.lineTo(x,y):c.moveTo(x,y)});c.stroke();
+ const n=Math.min(6,labels.length),axis=(id)=>{document.getElementById(id).innerHTML='';[0,...Array.from({length:n-1},(_,i)=>Math.round(i*(labels.length-1)/(n-1)))].forEach(i=>{const s=document.createElement('span');s.textContent=localHour(labels[i]);document.getElementById(id).appendChild(s)})};
+ axis(canvas.id==='homeChart'?'homeAxis':'bigAxis');
+}
+function renderTabs(){const el=document.getElementById('tabs');el.innerHTML='';Object.keys(meta).forEach((k,i)=>{const b=document.createElement('button');b.className='tab '+(k===state.metric?'active':'');b.textContent=meta[k][0];b.onclick=()=>{state.metric=k;document.querySelectorAll('#tabs .tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');draw(document.getElementById('bigChart'),k,+document.getElementById('range').value);updateSelected()};el.appendChild(b)})}
+function updateSelected(){const h=state.weather?.hourly;if(!h)return;const i=+document.getElementById('timeSlider').value;const k=state.metric;document.getElementById('selectedTime').textContent=localHour(h.time[i]||h.time[0]);document.getElementById('selectedValue').textContent=`${meta[k][0]}: ${fmt(h[meta[k][2]][i],k==='precip'?1:0)} ${meta[k][1]}`}
+function renderAll(){renderBriefing();renderHome();renderTabs();draw(document.getElementById('bigChart'),state.metric,+document.getElementById('range').value);document.getElementById('timeSlider').max=Math.max(0,Math.min(47,(state.weather?.hourly?.time?.length||1)-1));updateSelected();document.getElementById('altLabel').textContent=Math.round(state.elevation).toLocaleString('it-IT')+' m';document.getElementById('altSlider').value=state.elevation}
+document.getElementById('metricSelect').onchange=e=>{state.metric=e.target.value;draw(document.getElementById('homeChart'),state.metric,24)};
+document.getElementById('range').onchange=()=>draw(document.getElementById('bigChart'),state.metric,+document.getElementById('range').value);
+document.getElementById('timeSlider').oninput=updateSelected;
+document.getElementById('altSlider').oninput=e=>document.getElementById('altLabel').textContent=Number(e.target.value).toLocaleString('it-IT')+' m';
+document.getElementById('reloadAltitude').onclick=()=>{state.elevation=+document.getElementById('altSlider').value;fetchWeather()};
+document.getElementById('speedSlider').addEventListener('change',()=>{if(routePoints.length)enrichRoute()});
+document.getElementById('gpxBtn').onclick=()=>document.getElementById('gpxFile').click();
+document.getElementById('speedSlider').oninput=e=>document.getElementById('speedLabel').textContent=Number(e.target.value).toFixed(1)+' km/h';
+
+function hav(a,b){const R=6371000, p=Math.PI/180, dlat=(b.lat-a.lat)*p,dlon=(b.lon-a.lon)*p;const x=Math.sin(dlat/2)**2+Math.cos(a.lat*p)*Math.cos(b.lat*p)*Math.sin(dlon/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+function parseGPX(txt){
+ const xml=new DOMParser().parseFromString(txt,'application/xml');
+ const nodes=[...xml.querySelectorAll('trkpt')];
+ if(!nodes.length) throw new Error('Nessun trkpt nel GPX');
+ return nodes.map(n=>({lat:+n.getAttribute('lat'),lon:+n.getAttribute('lon'),ele:+(n.querySelector('ele')?.textContent||0),time:n.querySelector('time')?.textContent||null}));
+}
+function simplify(points,max=60){
+ if(points.length<=max)return points;
+ const out=[]; for(let i=0;i<max;i++) out.push(points[Math.round(i*(points.length-1)/(max-1))]); return out;
+}
+function estimateRoute(points,speed){
+ let dist=0,up=0;
+ const out=[{...points[0],dist:0,up:0,minutes:0}];
+ for(let i=1;i<points.length;i++){
+   const d=hav(points[i-1],points[i]); const dz=Math.max(0,(points[i].ele||0)-(points[i-1].ele||0));
+   dist+=d; up+=dz;
+   // Naismith-like practical adjustment: + 10 min per 100m ascent.
+   const minutes=dist/1000/speed*60 + up/100*10;
+   out.push({...points[i],dist,up,minutes});
+ }
+ return out;
+}
+function interpWeatherAt(when){
+ const h=state.weather?.hourly;if(!h)return null;
+ const t=when.getTime(); let best=0,bestd=Infinity;
+ h.time.forEach((x,i)=>{const d=Math.abs(new Date(x).getTime()-t);if(d<bestd){bestd=d;best=i}});
+ return {i:best,time:h.time[best],temp:h.temperature_2m[best],wind:h.wind_speed_10m[best],gust:h.wind_gusts_10m[best],precip:h.precipitation[best],cloud:h.cloud_cover[best],humidity:h.relative_humidity_2m[best],cape:h.cape?.[best],code:h.weather_code?.[best]};
+}
+async function enrichRoute(){
+ const speed=+document.getElementById('speedSlider').value;
+ const route=estimateRoute(simplify(routePoints,80),speed);
+ const start=routePoints[0].time?new Date(routePoints[0].time):new Date();
+ // If GPX contains timestamps, use them; otherwise start now.
+ routeForecast=route.map((p,idx)=>{const when=p.time?new Date(p.time):new Date(start.getTime()+p.minutes*60000);return {...p,when,wx:interpWeatherAt(when)}});
+ renderRoute(routeForecast); renderRouteStorm();
+}
+function drawRoute(points){
+ const c=document.getElementById('routeChart'); if(!c||!points.length)return;
+ const dpr=devicePixelRatio||1,w=c.clientWidth,ht=c.clientHeight||205;c.width=w*dpr;c.height=ht*dpr;const ctx=c.getContext('2d');ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,ht);
+ const e=points.map(x=>x.ele||0),min=Math.min(...e),max=Math.max(...e),pad=18;
+ ctx.strokeStyle='#263850';ctx.lineWidth=1;for(let i=1;i<4;i++){let y=pad+(ht-2*pad)*i/4;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+ ctx.strokeStyle='#67b7ff';ctx.lineWidth=3;ctx.beginPath();e.forEach((v,i)=>{const x=pad+i*(w-2*pad)/Math.max(1,e.length-1),y=ht-pad-(v-min)/(max-min||1)*(ht-2*pad);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+ const ax=document.getElementById('routeAxis');ax.innerHTML='';[0,Math.floor((points.length-1)/2),points.length-1].forEach(i=>{const z=document.createElement('span');z.textContent=(points[i].dist/1000).toFixed(1)+' km';ax.appendChild(z)})
+}
+function renderRoute(points){
+ const list=document.getElementById('routeList'); list.innerHTML='';
+ const picks=[0,Math.floor((points.length-1)*.25),Math.floor((points.length-1)*.5),Math.floor((points.length-1)*.75),points.length-1];
+ [...new Set(picks)].forEach(i=>{const p=points[i],w=p.wx;const el=document.createElement('div');el.className='routepoint';el.innerHTML=`<span class="dot"></span><div><b>${(p.dist/1000).toFixed(1)} km · ${Math.round(p.ele||0)} m</b><div class="small">arrivo stimato ${p.when.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})} · +${Math.round(p.up)} m D+</div><div style="margin-top:3px">${w?`${fmt(w.temp,0)}°C · vento ${fmt(w.wind,0)} km/h · raffiche ${fmt(w.gust,0)} km/h · pioggia ${fmt(w.precip,1)} mm`: 'fuori finestra previsionale'}</div></div>`;list.appendChild(el)});
+ document.getElementById('routeForecast').innerHTML=`<div class="notice">Percorso: ${(points.at(-1).dist/1000).toFixed(1)} km · dislivello positivo +${Math.round(points.at(-1).up)} m · tempo stimato ${Math.round(points.at(-1).minutes)} min. La previsione è interpolata sull'orario previsto di passaggio e sulla posizione del percorso.</div>`;
+ drawRoute(points); renderRouteRiskPanel();
+}
+document.getElementById('gpxFile').onchange=async e=>{
+ if(!e.target.files[0])return;
+ try{routePoints=parseGPX(await e.target.files[0].text());await enrichRoute();setStatus(`GPX caricato · ${routePoints.length} punti`)}
+ catch(err){setStatus('GPX non valido o senza traccia');}
+};
+
+let radarMap=null, radarLayers=[], radarFrames=[], radarPos=0, radarTimer=null;
+let cellMotion=null;
+function degToRad(x){return x*Math.PI/180}
+function bearing(lat1,lon1,lat2,lon2){
+ const p1=degToRad(lat1),p2=degToRad(lat2),dl=degToRad(lon2-lon1);
+ const y=Math.sin(dl)*Math.cos(p2);
+ const x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl);
+ return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function compass(deg){
+ const a=['N','NE','E','SE','S','SW','W','NW'];
+ return a[Math.round(deg/45)%8];
+}
+function radarMotionEstimate(){
+ // RainViewer frame metadata provides time, but not a geographic storm centroid.
+ // We therefore expose temporal coverage and leave centroid motion unclaimed.
+ if(!radarFrames.length){
+   cellMotion=null;
+   return null;
+ }
+ const a=radarFrames[Math.max(0,radarFrames.length-2)];
+ const b=radarFrames[radarFrames.length-1];
+ if(!a||!b)return null;
+ const dt=(b.time-a.time)/3600;
+ return {dtHours:dt,from:a.time,to:b.time};
+}
+function renderCellTracker(){
+ const box=document.getElementById('cellForecast');
+ if(!box)return;
+ const m=radarMotionEstimate();
+ if(!m){
+   document.getElementById('cellBadge').textContent='DATI RADAR RICHIESTI';
+   box.textContent='Apri la pagina Radar per caricare i frame osservati.';
+   return;
+ }
+ document.getElementById('cellBadge').textContent='FRAME OSSERVATI';
+ document.getElementById('cellSpeed').textContent='n/d';
+ document.getElementById('cellBearing').textContent='n/d';
+ document.getElementById('cellAge').textContent=new Date(m.to*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+ box.innerHTML=`Sono disponibili frame radar consecutivi separati da circa <b>${Math.round(m.dtHours*60)} min</b>. Esegui <b>Analizza celle</b> dalla pagina Radar per ottenere movimento, traiettoria e possibile intersezione con il GPX.`;
+ renderCellRoute();
+}
+function renderCellRoute(){
+ const el=document.getElementById('cellRoute');
+ if(!el)return;
+ if(!routeForecast.length){
+  el.textContent='Importa un GPX per collegare il tracker alla rotta.';
+  return;
+ }
+ el.textContent='La rotta è disponibile. Dopo l’analisi radar verranno mostrate distanza minima e finestra temporale della proiezione.';
+}
+
+async function loadRadar(){
+ try{
+  if(!window.L)return;
+  if(!radarMap){
+   radarMap=L.map('radarMap',{zoomControl:true}).setView([state.lat,state.lon],8);
+   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(radarMap);
+   L.marker([state.lat,state.lon]).addTo(radarMap).bindPopup(state.name||'Posizione');
+  }else radarMap.setView([state.lat,state.lon],8);
+  const meta=await fetch('https://api.rainviewer.com/public/weather-maps.json',{cache:'no-store'}).then(r=>r.json());
+  radarFrames=meta?.radar?.past||[];
+  if(!radarFrames.length) throw new Error('Nessun frame');
+  radarLayers.forEach(x=>radarMap.removeLayer(x)); radarLayers=[];
+  radarFrames.forEach((f,i)=>{
+   const layer=L.tileLayer(`${meta.host}${f.path}/256/{z}/{x}/{y}/2/1_0.png`,{opacity:0,tileSize:256,maxZoom:7,attribution:'Radar: RainViewer'});
+   radarLayers.push(layer); layer.addTo(radarMap);
+  });
+  radarPos=radarFrames.length-1; showRadarFrame(); renderCellTracker();
+  document.getElementById('radarStatus').textContent='Radar osservato · ultimi 2h · frame ~10 min';
+  setTimeout(()=>radarMap.invalidateSize(),100);
+ }catch(e){ document.getElementById('radarStatus').textContent='Radar non disponibile al momento.'; }
+}
+function showRadarFrame(){
+ radarLayers.forEach((l,i)=>l.setOpacity(i===radarPos?0.68:0));
+ const f=radarFrames[radarPos];
+ if(f) document.getElementById('radarFrame').textContent='Frame: '+new Date(f.time*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+' · osservato';
+}
+function radarStep(dir){if(!radarFrames.length)return;radarPos=Math.max(0,Math.min(radarFrames.length-1,radarPos+dir));showRadarFrame();}
+function radarPlay(){
+ if(radarTimer){clearInterval(radarTimer);radarTimer=null;document.getElementById('radarPlay').textContent='▶';return;}
+ document.getElementById('radarPlay').textContent='Ⅱ';
+ radarTimer=setInterval(()=>{if(radarPos>=radarFrames.length-1){clearInterval(radarTimer);radarTimer=null;document.getElementById('radarPlay').textContent='▶';}else radarStep(1)},650);
+}
+async function initRadar(){await loadRadar();}
+document.getElementById('radarRefresh').onclick=initRadar;
+document.getElementById('radarPrev').onclick=()=>radarStep(-1);
+document.getElementById('radarNext').onclick=()=>radarStep(1);
+document.getElementById('radarPlay').onclick=radarPlay;
+
+let timelineHours=24;
+let timelineSelected={row:0,col:0};
+function routeTimelinePoints(){
+  if(routeForecast&&routeForecast.length>1) return routeForecast;
+  if(routePoints&&routePoints.length>1){
+    const n=24, out=[]; for(let i=0;i<n;i++){const p=routePoints[Math.floor(i*(routePoints.length-1)/(n-1))]; out.push({...p,when:new Date(Date.now()+i*60*60000),wx:interpWeatherAt(new Date(Date.now()+i*60*60000))});} return out;
+  }
+  return [];
+}
+function tlLevel(w){
+  if(!w) return 'unknown';
+  if((w.gust||0)>=60 || (w.precip||0)>=8 || (w.cape||0)>=1000) return 'high';
+  if((w.gust||0)>=45 || (w.precip||0)>=4 || (w.cape||0)>=500) return 'med';
+  return 'low';
+}
+function tlColor(w){
+  const l=tlLevel(w); if(l==='high') return '#ff7b7b'; if(l==='med') return '#ffc857'; if((w?.precip||0)>0.2) return '#67b7ff'; return '#62d5a0';
+}
+function renderTimeline(){
+ const c=document.getElementById('timelineCanvas'); if(!c)return;
+ const pts=routeTimelinePoints(); const h=state.weather?.hourly; if(!h||!h.time?.length){return;}
+ const hours=Math.min(timelineHours,h.time.length); const rows=Math.min(28,pts.length||1); const W=Math.max(760,180+hours*28), H=70+rows*24; const dpr=devicePixelRatio||1; c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px'; const ctx=c.getContext('2d');ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
+ const left=170,top=38,cw=(W-left-12)/hours,rh=22;
+ ctx.font='10px system-ui';ctx.fillStyle='#91a2b8';ctx.textAlign='center';
+ for(let j=0;j<hours;j++){ctx.fillText(new Date(h.time[j]).toLocaleTimeString('it-IT',{hour:'2-digit'}),left+j*cw+cw/2,20);ctx.strokeStyle='#263850';ctx.beginPath();ctx.moveTo(left+j*cw,top);ctx.lineTo(left+j*cw,H);ctx.stroke();}
+ ctx.textAlign='right';
+ const sample=pts.length?pts.map((p,i)=>({p,i})).filter((_,i)=>rows===pts.length||i%Math.max(1,Math.floor(pts.length/rows))===0).slice(0,rows):[];
+ sample.forEach((item,r)=>{const p=item.p;const y=top+r*rh;ctx.fillStyle='#f4f7fb';ctx.fillText(`${(p.dist/1000||0).toFixed(1)} km · ${Math.round(p.ele||0)}m`,left-8,y+15);for(let j=0;j<hours;j++){const when=new Date(h.time[j]);const wx=interpWeatherAt(when);const x=left+j*cw;ctx.fillStyle=tlColor(wx);ctx.globalAlpha=.82;ctx.fillRect(x+1,y+2,Math.max(2,cw-2),rh-4);ctx.globalAlpha=1;ctx.fillStyle='#07101d';ctx.font='9px system-ui';if(cw>25)ctx.fillText(`${Math.round(wx?.temp??NaN)}°`,x+cw/2,y+15);ctx.font='10px system-ui';}});
+ // arrival markers
+ if(pts.length>1){sample.forEach((item,r)=>{const p=item.p;if(!p.when)return;let best=0,bd=Infinity;h.time.slice(0,hours).forEach((t,j)=>{const d=Math.abs(new Date(t)-new Date(p.when));if(d<bd){bd=d;best=j}});const x=left+best*cw+cw/2,y=top+r*rh;ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,y+rh);ctx.stroke();});}
+ c.onclick=(ev)=>{const rect=c.getBoundingClientRect();const x=(ev.clientX-rect.left)*(W/rect.width),y=(ev.clientY-rect.top)*(H/rect.height);const col=Math.floor((x-left)/cw),row=Math.floor((y-top)/rh);if(col<0||col>=hours||row<0||row>=sample.length)return;const p=sample[row].p,wx=interpWeatherAt(new Date(h.time[col]));timelineSelected={row,col};document.getElementById('timelineInfo').innerHTML=`<b>${(p.dist/1000||0).toFixed(1)} km · ${Math.round(p.ele||0)} m</b><br>Ora forecast: <b>${new Date(h.time[col]).toLocaleString('it-IT',{weekday:'short',hour:'2-digit',minute:'2-digit'})}</b><br>Arrivo GPX: <b>${p.when?new Date(p.when).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'n/d'}</b><br>Temperatura <b>${fmt(wx?.temp,1)}°C</b> · vento <b>${fmt(wx?.wind,0)} km/h</b> · raffiche <b>${fmt(wx?.gust,0)} km/h</b> · pioggia <b>${fmt(wx?.precip,1)} mm</b> · CAPE <b>${fmt(wx?.cape,0)}</b>`;};
+ document.getElementById('timelineStormInfo').innerHTML=window.lastRadarAnalysis?.interceptions?.length?`Radar: <b>${window.lastRadarAnalysis.interceptions.length}</b> possibili intercettazioni entro la soglia configurata. Apri Tracker/Radar per i dettagli.`:'Nessuna analisi radar/GPX disponibile in questa sessione. La timeline meteo resta indipendente dal tracking radar.';
+}
+document.getElementById('tl24')?.addEventListener('click',()=>{timelineHours=24;renderTimeline()});document.getElementById('tl48')?.addEventListener('click',()=>{timelineHours=48;renderTimeline()});document.getElementById('tlRoute')?.addEventListener('click',()=>{document.getElementById('timelineInfo').textContent=routeForecast.length?'Percorso sincronizzato: le righe rappresentano punti GPX campionati e le colonne ore di previsione.':'Importa prima un GPX per sincronizzare il percorso.';renderTimeline()});document.getElementById('tlRefresh')?.addEventListener('click',renderTimeline);
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
+// V13: unica istanza della mappa radar + overlay traiettorie
+function clearStormOverlays(){
+  if(window.stormOverlayLayers){window.stormOverlayLayers.forEach(l=>radarMap&&radarMap.removeLayer(l));}
+  window.stormOverlayLayers=[];
+}
+function drawStormTrajectories(j){
+  if(!radarMap)return; clearStormOverlays();
+  const trs=j.trajectories||[]; const route=routePoints||[];
+  trs.slice(-30).forEach((t,idx)=>{
+    const pts=[[t.start.lat,t.start.lon],...(t.endpoints||[]).map(p=>[p.lat,p.lon])];
+    if(pts.length<2)return;
+    const line=L.polyline(pts,{weight:4,opacity:.78,dashArray:'8 7'}).addTo(radarMap);
+    line.bindPopup(`<b>Traiettoria radar</b><br>${fmt(t.speedKmh,0)} km/h · ${compass(t.bearing)} (${fmt(t.bearing,0)}°)<br>Proiezione lineare 60 min`);
+    window.stormOverlayLayers.push(line);
+    const end=pts[pts.length-1];
+    const marker=L.circleMarker(end,{radius:6,weight:2,fillOpacity:.85}).addTo(radarMap).bindTooltip(`+60 min · ${fmt(t.speedKmh,0)} km/h`,{permanent:false});
+    window.stormOverlayLayers.push(marker);
+  });
+  const riskRoute=routeForecast.length>1?routeForecast:route;
+  if(riskRoute.length>1){
+    const colors={low:'#36b37e',med:'#f5a623',high:'#e5484d',unknown:'#aab2bd'};
+    for(let i=1;i<riskRoute.length;i++){
+      const a=riskRoute[i-1],b=riskRoute[i],level=routeForecast.length>1?routeRiskLevel(b):'unknown';
+      const line=L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{weight:5,opacity:.9,color:colors[level],lineCap:'round'}).addTo(radarMap);
+      const wx=b.wx, when=b.when?b.when.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'orario n/d';
+      line.bindPopup(`<b>GPX · ${level==='high'?'Indicatore elevato':level==='med'?'Da monitorare':level==='low'?'Indicatore basso':'Dati n/d'}</b><br>Arrivo stimato: ${when}<br>Quota: ${Math.round(b.ele||0)} m<br>${wx?`Raffiche ${fmt(wx.gust,0)} km/h · pioggia ${fmt(wx.precip,1)} mm · CAPE ${fmt(wx.cape,0)} J/kg`:'Previsione non disponibile'}`);
+      window.stormOverlayLayers.push(line);
+    }
+  }
+}
+function updateProjectionPanel(j){
+  const el=document.getElementById('cellProjection'); if(!el)return;
+  const trs=(j.trajectories||[]).filter(t=>Number.isFinite(t.speedKmh));
+  if(!trs.length){el.textContent='Nessuna traiettoria con movimento misurabile nel frame corrente.';return;}
+  const t=trs.slice().sort((a,b)=>b.speedKmh-a.speedKmh)[0];
+  const end=t.endpoints?.[t.endpoints.length-1];
+  el.innerHTML=`Cella <b>${t.id}</b>: movimento osservato <b>${fmt(t.speedKmh,0)} km/h</b> verso <b>${compass(t.bearing)}</b>. Dopo 60 min, la proiezione lineare porta il centro a circa <b>${fmt(end?.lat,3)}, ${fmt(end?.lon,3)}</b>.`;
+}
+async function loadRadar(){
+ try{
+  if(!window.L)return;
+  if(!radarMap){
+   radarMap=L.map('radarMap',{zoomControl:true}).setView([state.lat,state.lon],8);
+   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(radarMap);
+  } else radarMap.setView([state.lat,state.lon],8);
+  clearStormOverlays();
+  const meta=await fetch('https://api.rainviewer.com/public/weather-maps.json',{cache:'no-store'}).then(r=>r.json());
+  radarFrames=meta?.radar?.past||[]; if(!radarFrames.length)throw new Error('Nessun frame');
+  radarLayers.forEach(x=>radarMap.removeLayer(x)); radarLayers=[];
+  radarFrames.forEach((f,i)=>{const layer=L.tileLayer(`${meta.host}${f.path}/256/{z}/{x}/{y}/2/1_0.png`,{opacity:0,tileSize:256,maxZoom:7,attribution:'Radar: RainViewer'});radarLayers.push(layer);layer.addTo(radarMap);});
+  radarPos=radarFrames.length-1; showRadarFrame();
+  document.getElementById('radarStatus').textContent='Radar osservato · ultimi 2h · frame ~10 min';
+  setTimeout(()=>radarMap.invalidateSize(),100);
+ }catch(e){document.getElementById('radarStatus').textContent='Radar non disponibile al momento.';}
+}
+function showRadarFrame(){radarLayers.forEach((l,i)=>l.setOpacity(i===radarPos?0.68:0));const f=radarFrames[radarPos];if(f)document.getElementById('radarFrame').textContent='Frame: '+new Date(f.time*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+' · osservato';}
+function radarStep(dir){if(!radarFrames.length)return;radarPos=Math.max(0,Math.min(radarFrames.length-1,radarPos+dir));showRadarFrame();}
+function radarPlay(){if(radarTimer){clearInterval(radarTimer);radarTimer=null;document.getElementById('radarPlay').textContent='▶';return;}document.getElementById('radarPlay').textContent='Ⅱ';radarTimer=setInterval(()=>{if(radarPos>=radarFrames.length-1){clearInterval(radarTimer);radarTimer=null;document.getElementById('radarPlay').textContent='▶';}else radarStep(1)},650);}
+async function initRadar(){await loadRadar();}
+document.getElementById('radarRefresh').onclick=initRadar;document.getElementById('radarPrev').onclick=()=>radarStep(-1);document.getElementById('radarNext').onclick=()=>radarStep(1);document.getElementById('radarPlay').onclick=radarPlay;
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(b.dataset.page).classList.add('active');if(b.dataset.page==='charts')draw(document.getElementById('bigChart'),state.metric,+document.getElementById('range').value);if(b.dataset.page==='vertical'&&!verticalData.length)loadVertical();if(b.dataset.page==='alerts')renderAlerts();if(b.dataset.page==='storms'){renderStorms();setupBackend();fetchLiveLightning()}if(b.dataset.page==='tracker')renderCellTracker();if(b.dataset.page==='map'){initRadar();setTimeout(renderCellTracker,400)}if(b.dataset.page==='timeline'){setTimeout(renderTimeline,80)}});
+
+let deferred;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;document.getElementById('installBtn').style.display='block';document.getElementById('installBtn').onclick=()=>deferred.prompt()});
+
+// V19 Offline Mountain Mode
+const OFFLINE_SCHEMA='alpine-weather-offline-v1';
+function offlineSnapshot(){
+  const snap={schema:OFFLINE_SCHEMA,createdAt:new Date().toISOString(),state,routePoints,routeForecast,timelineHours,placeName:document.getElementById('placeName')?.textContent||''};
+  return snap;
+}
+function updateOfflineUI(){
+  const online=navigator.onLine;
+  const bar=document.getElementById('offlineBar'),badge=document.getElementById('offlineBadge');
+  if(!bar)return;
+  bar.textContent=online?'● Online · aggiornamenti disponibili':'● OFFLINE · modalità montagna attiva · dati locali';
+  bar.style.color=online?'var(--good)':'var(--warn)';
+  if(badge){badge.textContent=online?'ONLINE':'OFFLINE';badge.className='badge '+(online?'':'off');}
+  const ws=document.getElementById('offlineState'), ww=document.getElementById('offlineWeather'), wg=document.getElementById('offlineGpx');
+  if(ws)ws.textContent=online?'Online':'Offline';
+  if(ww)ww.textContent=state?.weather?.time?.length?new Date(state.weather.time[state.weather.time.length-1]).toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'nessun dato';
+  if(wg)wg.textContent=routePoints?.length?`${routePoints.length} punti`:'non importato';
+}
+function saveOfflineSnapshot(){
+  try{localStorage.setItem('alpineOfflineSnapshot',JSON.stringify(offlineSnapshot())); updateOfflineUI(); document.getElementById('offlineDetail').textContent='Snapshot salvato localmente · '+new Date().toLocaleString('it-IT'); setStatus('Snapshot offline salvato');}catch(e){document.getElementById('offlineDetail').textContent='Salvataggio offline non riuscito: '+e.message;}}
+function restoreOfflineSnapshot(){
+  try{const raw=localStorage.getItem('alpineOfflineSnapshot');if(!raw)return false;const x=JSON.parse(raw);if(x.schema!==OFFLINE_SCHEMA)return false;if(x.state)state=x.state;if(x.routePoints)routePoints=x.routePoints;if(x.routeForecast)routeForecast=x.routeForecast;if(x.timelineHours)timelineHours=x.timelineHours; if(typeof renderAll==='function')renderAll(); if(typeof renderRoute==='function')renderRoute(); if(typeof renderTimeline==='function')renderTimeline(); updateOfflineUI(); document.getElementById('offlineDetail').textContent='Snapshot ripristinato · '+new Date(x.createdAt).toLocaleString('it-IT'); return true;}catch(e){return false;}}
+function downloadOffline(){const blob=new Blob([JSON.stringify(offlineSnapshot(),null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='alpine-weather-offline.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function bindOffline(){
+ document.getElementById('offlineSave')?.addEventListener('click',saveOfflineSnapshot);
+ document.getElementById('offlineExport')?.addEventListener('click',downloadOffline);
+ document.getElementById('offlineImport')?.addEventListener('click',()=>document.getElementById('offlineFile')?.click());
+ document.getElementById('offlineFile')?.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{const x=JSON.parse(await f.text());if(x.schema!==OFFLINE_SCHEMA)throw Error('snapshot non riconosciuto');localStorage.setItem('alpineOfflineSnapshot',JSON.stringify(x));restoreOfflineSnapshot();}catch(err){document.getElementById('offlineDetail').textContent='Importazione fallita: '+err.message;}});
+ window.addEventListener('online',updateOfflineUI);window.addEventListener('offline',updateOfflineUI);updateOfflineUI();
+}
+bindOffline();
+
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+window.addEventListener('resize',()=>{draw(document.getElementById('homeChart'),state.metric,24);draw(document.getElementById('bigChart'),state.metric,+document.getElementById('range').value)});
+if(!loadCache()){fetchWeather()}else{renderAll();loadVertical();renderAlerts();renderStorms();fetchWeather()}
+
+async function trackRadarCells(){
+  if(!BACKEND_URL){document.getElementById('trackingStatus').textContent='Configura BACKEND_URL per usare il tracking server-side.';return}
+  const route=routePoints.slice(0,1200).map(p=>({lat:p.lat,lon:p.lon,ele:p.ele,minutes:p.minutes,time:p.when?.toISOString?.()||null}));
+  document.getElementById('trackingStatus').textContent='Analisi delle ultime immagini radar…';
+  try{
+    const r=await fetch(BACKEND_URL.replace(/\/$/,'')+'/storm-segments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat:state.lat,lon:state.lon,zoom:7,frames:12,minArea:18,route})});
+    const j=await r.json(); window.lastRadarAnalysis=j; if(!r.ok) throw new Error(j.message||('HTTP '+r.status));
+    const cells=j.cells||[];
+    document.getElementById('cellCount').textContent=cells.length;
+    const tracked=cells.filter(x=>x.track&&Number.isFinite(x.track.speedKmh));
+    const fastest=tracked.slice().sort((a,b)=>b.track.speedKmh-a.track.speedKmh)[0];
+    document.getElementById('cellSpeed').textContent=fastest?fmt(fastest.track.speedKmh,0)+' km/h':'—';
+    document.getElementById('cellBearing').textContent=fastest?dir(fastest.track.bearing)+' · '+fmt(fastest.track.bearing,0)+'°':'—';
+    document.getElementById('cellAge').textContent=j.latestTime?new Date(j.latestTime*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'—';
+    const rr=j.routeRisk;
+    const hits=j.interceptions||[];
+    document.getElementById('cellRoute').innerHTML=hits.length?`<b>Possibili intercettazioni</b><br>`+hits.slice(0,4).map(h=>`Cella ${h.cellId}: <b>+${h.minutesAhead} min</b>, ${fmt(h.distanceKm,1)} km dalla rotta${Number.isFinite(h.timeDeltaMinutes)?`, differenza temporale ${fmt(h.timeDeltaMinutes,0)} min`:''}, quota GPX ${Math.round(h.routePoint.ele||0)} m`).join('<br>'):(rr?`Cella <b>${rr.cellId}</b>: minima distanza stimata <b>${fmt(rr.distanceKm,1)} km</b> dalla rotta a <b>+${rr.minutesAhead} min</b>.`:'Nessuna possibile intercettazione entro 5 km nei prossimi 60 min.');
+    updateProjectionPanel(j); drawStormTrajectories(j); renderRouteRiskPanel();
+    document.getElementById('cellForecast').textContent=`${cells.length} celle segmentate nell'ultimo frame · ${tracked.length} con movimento misurabile. Ultimo frame: ${j.latestTime?new Date(j.latestTime*1000).toLocaleString('it-IT'):'—'}.`;
+    document.getElementById('trackingStatus').textContent=hits.length?'Tracking completato · rilevate possibili intercettazioni radar/GPX.':'Tracking completato · nessuna intercettazione entro la soglia configurata.';
+  }catch(e){document.getElementById('trackingStatus').textContent='Tracking non disponibile: '+e.message}
+}
+document.getElementById('trackCellsBtn')?.addEventListener('click',trackRadarCells);
+document.getElementById('trackAutoBtn')?.addEventListener('click',()=>{if(window._trackTimer){clearInterval(window._trackTimer);window._trackTimer=null;document.getElementById('trackAutoBtn').textContent='Auto-refresh'}else{trackRadarCells();window._trackTimer=setInterval(trackRadarCells,10*60*1000);document.getElementById('trackAutoBtn').textContent='Stop auto-refresh'}});
+</script>
+
+<script>
+(function(){
+  const oldTitle=document.querySelector('h1');
+  if(oldTitle) oldTitle.textContent='Mountain Weather Timeline V17';
+  const panel=document.createElement('section');
+  panel.id='v17-sync';
+  panel.style.cssText='margin:16px 0;padding:14px;border:1px solid #ddd;border-radius:14px;background:#fff;';
+  panel.innerHTML=`<h2 style="margin:0 0 8px">Cursore temporale sincronizzato</h2>
+  <input id="v17time" type="range" min="0" max="60" step="10" value="0" style="width:100%">
+  <div id="v17readout" style="margin-top:8px;font-weight:600">T +0 min</div>
+  <div id="v17details" style="margin-top:6px">Mappa, GPX, profilo quota e radar vengono aggiornati allo stesso istante.</div>`;
+  document.body.insertBefore(panel,document.body.firstChild);
+  const slider=panel.querySelector('#v17time'), read=panel.querySelector('#v17readout'), details=panel.querySelector('#v17details');
+  function update(){
+    const m=Number(slider.value); read.textContent='T +'+m+' min';
+    details.textContent=m===0?'Istante osservato: radar + posizione GPX iniziale.':`Proiezione T +${m} min: posizione GPX stimata e radar osservato disponibile fino all’ultimo frame; oltre i frame osservati, eventuali celle sono solo proiezioni sperimentali.`;
+    window.dispatchEvent(new CustomEvent('mountainTimelineV17',{detail:{offsetMinutes:m}}));
+  }
+  slider.addEventListener('input',update); update();
+})();
+</script>
+
+<style>
+#v18-live{margin:10px 14px;padding:14px;background:rgba(14,26,43,.97);border:1px solid var(--line);border-radius:18px}
+#v18-live .v18grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#v18-live .v18stat{background:var(--card2);padding:9px;border-radius:11px;font-size:12px}.v18stat b{display:block;font-size:15px}
+.v18on{border-color:#356b58!important}.v18off{color:var(--muted)}
+</style>
+<script>
+(function(){
+  const wrap=document.createElement('section'); wrap.id='v18-live';
+  wrap.innerHTML=`<div class="row"><div><h2 style="margin:0">📍 Posizione live sul GPX</h2><div class="small">La posizione viene letta solo dopo il tuo consenso. Nessun dato viene inviato dal browser al server.</div></div><button class="btn" id="v18toggle">Avvia GPS</button></div>
+  <div id="v18status" class="notice" style="margin-top:10px">GPS fermo · importa prima un GPX per agganciare la posizione alla traccia.</div>
+  <div class="v18grid"><div class="v18stat"><span>Traccia</span><b id="v18dist">—</b></div><div class="v18stat"><span>Quota GPS</span><b id="v18ele">—</b></div><div class="v18stat"><span>Velocità</span><b id="v18speed">—</b></div><div class="v18stat"><span>Accuratezza</span><b id="v18acc">—</b></div></div>`;
+  const anchor=document.querySelector('.searchbar'); (anchor||document.body.firstChild).after(wrap);
+  let watchId=null, marker=null, accuracyCircle=null, lastFix=null;
+  const status=wrap.querySelector('#v18status'), toggle=wrap.querySelector('#v18toggle');
+  const fmtN=(n,d=1)=>Number.isFinite(n)?n.toFixed(d):'—';
+  function hav(a,b){const R=6371000, p=Math.PI/180, dLat=(b.lat-a.lat)*p,dLon=(b.lon-a.lon)*p;const x=Math.sin(dLat/2)**2+Math.cos(a.lat*p)*Math.cos(b.lat*p)*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+  function nearest(pt){ if(!window.routePoints||routePoints.length<2)return null; let best=null; for(let i=0;i<routePoints.length;i++){const p=routePoints[i],d=hav(pt,p);if(!best||d<best.distance)best={index:i,distance:d,point:p};} return best; }
+  function setMap(pos){
+    if(!window.radarMap||!window.L)return;
+    const latlng=[pos.lat,pos.lon];
+    if(!marker) marker=L.circleMarker(latlng,{radius:8,weight:3,fillOpacity:.95}).addTo(radarMap).bindTooltip('Posizione GPS',{permanent:false}); else marker.setLatLng(latlng);
+    if(!accuracyCircle) accuracyCircle=L.circle(latlng,{radius:Math.max(5,pos.accuracy||0),weight:1,fillOpacity:.06}).addTo(radarMap); else {accuracyCircle.setLatLng(latlng);accuracyCircle.setRadius(Math.max(5,pos.accuracy||0));}
+  }
+  function apply(pos){
+    const n=nearest(pos); const sp=lastFix?hav(lastFix,pos)/Math.max(.001,(pos.time-lastFix.time)/1000)*3.6:null; lastFix=pos;
+    setMap(pos);
+    wrap.querySelector('#v18ele').textContent=Number.isFinite(pos.ele)?Math.round(pos.ele)+' m':'—';
+    wrap.querySelector('#v18speed').textContent=Number.isFinite(sp)?fmtN(sp,1)+' km/h':'—';
+    wrap.querySelector('#v18acc').textContent=Number.isFinite(pos.accuracy)?Math.round(pos.accuracy)+' m':'—';
+    if(n){const routeKm=(n.point.dist||0)/1000;wrap.querySelector('#v18dist').textContent=fmtN(routeKm,1)+' km';status.innerHTML=`GPS attivo · <b>${fmtN(n.distance,0)} m</b> dalla traccia · punto GPX ${n.index+1}/${routePoints.length}`; status.classList.add('v18on');
+      window.dispatchEvent(new CustomEvent('mountainLivePosition',{detail:{...pos,routeIndex:n.index,routeDistance:n.distance,routePoint:n.point,speedKmh:sp}}));
+      if(window.radarMap && document.getElementById('map').classList.contains('active')) radarMap.panTo([pos.lat,pos.lon],{animate:true,duration:.3});
+    } else {wrap.querySelector('#v18dist').textContent='GPX non caricato';status.textContent='GPS attivo · importa un GPX per agganciare la posizione alla rotta.';}
+  }
+  function stop(){if(watchId!==null){navigator.geolocation.clearWatch(watchId);watchId=null;}toggle.textContent='Avvia GPS';status.textContent='GPS fermo.';}
+  toggle.onclick=()=>{
+    if(watchId!==null){stop();return;}
+    if(!('geolocation' in navigator)){status.textContent='Geolocalizzazione non supportata da questo browser.';return;}
+    status.textContent='Richiesta permesso GPS…';
+    watchId=navigator.geolocation.watchPosition(p=>apply({lat:p.coords.latitude,lon:p.coords.longitude,ele:p.coords.altitude,accuracy:p.coords.accuracy,time:p.timestamp}),e=>{status.textContent='GPS: '+(e.code===1?'permesso negato.':e.message);stop();},{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+    toggle.textContent='Ferma GPS';
+  };
+  window.addEventListener('mountainTimelineV17',ev=>{window.v18TimelineOffset=ev.detail.offsetMinutes;});
+  window.addEventListener('beforeunload',stop);
+})();
+</script>
+
+
+<section id="officialBulletins" style="margin:24px 0;padding:18px;border:1px solid #d8dee9;border-radius:16px;background:#fff">
+<h2 style="margin:0 0 8px">Bollettini ufficiali</h2>
+<p style="margin:0 0 14px;color:#555">Fonte primaria separata dalle elaborazioni meteo dell'app. Verifica sempre area e validità del bollettino.</p>
+<div style="display:grid;gap:10px">
+<a href="https://aineva.it/bollettini/" target="_blank" rel="noopener" style="padding:14px;border-radius:12px;background:#eef5ff;text-decoration:none;color:inherit"><b>AINEVA — Bollettini valanghe</b><br><small>Bollettini delle Regioni e Province autonome aderenti.</small></a>
+<a href="https://www.avalanches.org/" target="_blank" rel="noopener" style="padding:14px;border-radius:12px;background:#f5f5f5;text-decoration:none;color:inherit"><b>EAWS — European Avalanche Warning Services</b><br><small>Standard europei, scala del pericolo e problemi valanghivi.</small></a>
+</div>
+<div id="bulletinStatus" style="margin-top:14px;padding:12px;border-radius:10px;background:#fafafa;font-size:13px">Stato: nessun bollettino importato automaticamente.</div>
+<p style="margin:12px 0 0;font-size:12px;color:#666">L'app non sostituisce il bollettino ufficiale e non genera un livello valanghe proprio.</p>
+</section>
+<script>
+(function(){
+ const el=document.getElementById('bulletinStatus');
+ const now=new Date();
+ el.textContent='Fonti ufficiali disponibili · controllo manuale consigliato · '+now.toLocaleString('it-IT');
+})();
+</script>
+
+
+<section id="v24-gis" style="margin:16px 0;padding:16px;border:1px solid #334155;border-radius:14px;background:#0f172a;color:#e2e8f0">
+<h2 style="margin-top:0">V25 · GPX → GIS → bollettino ufficiale</h2>
+<p id="v24-gis-status">Carica un GeoJSON ufficiale con gli identificativi della zona. Se le feature contengono un URL o codice di bollettino, l’app lo collega automaticamente; altrimenti segnala il fallback.</p>
+<input id="v24-gis-file" type="file" accept=".geojson,.json,application/geo+json,application/json" />
+<div id="v24-gis-result" style="margin-top:10px"></div>
+</section>
+<script type="module">
+import {matchRouteToZones} from './gis-zone-loader.js';
+const input=document.getElementById('v24-gis-file'), status=document.getElementById('v24-gis-status'), out=document.getElementById('v24-gis-result');
+input?.addEventListener('change', async()=>{
+ try{ const file=input.files?.[0]; if(!file) return; const geo=JSON.parse(await file.text());
+  const pts=window.routePoints||window.gpxRoute||window.currentRoutePoints||[];
+  if(!pts.length){status.textContent='Layer caricato, ma importa prima una traccia GPX.'; return;}
+  const rows=matchRouteToZones(pts,geo); const found=[...new Map(rows.flatMap(r=>r.zones).map(z=>[z.id||z.name,z])).values()];
+  status.textContent=`Layer GIS caricato: ${geo.features?.length||0} poligoni. Zone attraversate: ${found.length}.`;
+  out.innerHTML=found.length ? found.map(z=>{ const p=z.properties||{}; const pick=(keys)=>keys.map(k=>p[k]).find(v=>typeof v==='string'&&v.trim())||null; const url=pick(['bulletin_url','bollettino_url','aineva_url','official_url','source_url']); const code=pick(['bulletin_code','bollettino_code','aineva_code','zone_code','code','id']); const source=pick(['source','fonte','authority','ente']); const validity=pick(['valid_from','valid_to','validity','validita']); return `<div style="padding:10px 0;border-top:1px solid #334155"><b>${z.name}</b>${z.id?` · ${z.id}`:''}<div style="margin-top:5px;font-size:12px;color:#cbd5e1">${code?`Codice bollettino: ${code}<br>`:''}${source?`Fonte: ${source}<br>`:''}${validity?`Validità: ${validity}<br>`:''}${url?`<a href="${url}" target="_blank" rel="noopener" style="color:#7dd3fc">Apri bollettino ufficiale</a>`:'<span>Nessun collegamento al bollettino nel dataset GIS: associazione automatica non disponibile.</span>'}</div></div>`;}).join('') : '<em>Nessun poligono intersecato dalla traccia.</em>';
+ }catch(e){status.textContent='Errore nel layer GIS: '+e.message;}
+});
+</script>
+
+<style>
+.v26-panel{margin:16px 0;padding:16px;border:1px solid #d8dde5;border-radius:14px;background:#fff}
+.v26-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.v26-card{padding:12px;border-radius:10px;background:#f5f7fa}.v26-label{font-size:12px;opacity:.65}.v26-value{font-size:20px;font-weight:700;margin-top:4px}.v26-note{font-size:12px;opacity:.72;margin-top:10px}
+.v26-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}.v26-table th,.v26-table td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left}
+</style>
+<section class="v26-panel" id="v26Panel">
+<h2>V26 · Quota + esposizione del tratto</h2>
+<div class="v26-grid">
+ <div class="v26-card"><div class="v26-label">Quota minima</div><div class="v26-value" id="v26Min">—</div></div>
+ <div class="v26-card"><div class="v26-label">Quota massima</div><div class="v26-value" id="v26Max">—</div></div>
+ <div class="v26-card"><div class="v26-label">Esposizione prevalente</div><div class="v26-value" id="v26Aspect">—</div></div>
+ <div class="v26-card"><div class="v26-label">Tratti analizzati</div><div class="v26-value" id="v26Count">—</div></div>
+</div>
+<table class="v26-table"><thead><tr><th>Tratto</th><th>Quota</th><th>Esposizione</th><th>Zona GIS</th><th>Bollettino</th></tr></thead><tbody id="v26Rows"></tbody></table>
+<div class="v26-note">Quota ed esposizione sono proprietà geometriche della traccia. Il significato valanghivo viene mostrato solo quando è presente nel bollettino ufficiale associato alla zona; l'app non deduce autonomamente un grado di pericolo.</div>
+</section>
+<script>
+(function(){
+ const el=id=>document.getElementById(id);
+ const rad=d=>d*Math.PI/180, deg=r=>((r*180/Math.PI)+360)%360;
+ function bearing(a,b){const p1=rad(a.lat),p2=rad(b.lat),dl=rad(b.lon-a.lon);return deg(Math.atan2(Math.sin(dl)*Math.cos(p2),Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl)));}
+ function aspectName(x){const dirs=['N','NE','E','SE','S','SW','W','NW'];return dirs[Math.round(x/45)%8]}
+ function load(){
+   const pts=window.gpxPoints||window.routePoints||window.trackPoints||[];
+   if(!pts.length){el('v26Rows').innerHTML='<tr><td colspan="5">Importa una traccia GPX per analizzare quota ed esposizione.</td></tr>';return;}
+   const norm=pts.map(p=>({lat:+(p.lat??p.latitude),lon:+(p.lon??p.lng??p.longitude),ele:+(p.ele??p.elevation??p.altitude??NaN),zone:p.zoneName||p.zone||p.gisZone||'—',bulletin:p.bulletinUrl||p.bulletin||''})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+   const eles=norm.map(p=>p.ele).filter(Number.isFinite); if(eles.length){el('v26Min').textContent=Math.round(Math.min(...eles))+' m';el('v26Max').textContent=Math.round(Math.max(...eles))+' m';}
+   const bins={N:0,NE:0,E:0,SE:0,S:0,SW:0,W:0,NW:0}; const rows=[];
+   for(let i=0;i<norm.length-1;i++){const a=norm[i],b=norm[i+1];const asp=aspectName(bearing(a,b));bins[asp]++;if(i%Math.max(1,Math.floor(norm.length/40))===0)rows.push({i,a,b,asp});}
+   const prevalent=Object.entries(bins).sort((a,b)=>b[1]-a[1])[0]; el('v26Aspect').textContent=prevalent&&prevalent[1]?prevalent[0]:'—';el('v26Count').textContent=String(norm.length-1);
+   el('v26Rows').innerHTML=rows.map((r,n)=>{const q=Number.isFinite(r.a.ele)?Math.round(r.a.ele)+' m':'—';const link=r.a.bulletin&&/^https?:/i.test(r.a.bulletin)?'<a href="'+r.a.bulletin+'" target="_blank" rel="noopener">Fonte</a>':'—';return '<tr><td>#'+(r.i+1)+'</td><td>'+q+'</td><td>'+r.asp+'</td><td>'+r.a.zone+'</td><td>'+link+'</td></tr>'}).join('');
+ }
+ window.AlpineV26={refresh:load};
+ document.addEventListener('DOMContentLoaded',load);
+ window.addEventListener('gpx-loaded',load);
+})();
+</script>
+
+<section id="v27-3d" style="margin:16px 0;padding:16px;border:1px solid #475569;border-radius:14px;background:#0b1220;color:#e5e7eb">
+<h2 style="margin-top:0">V27 · Profilo 3D del percorso + esposizione</h2>
+<p class="small">Visualizzazione prospettica del tracciato GPX basata sulle quote presenti nel GPX. L’orientamento del segmento è mostrato con il colore; non è un modello DEM del terreno.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn" id="v27Reset">Reset vista</button><button class="btn" id="v27Auto">Auto-rotazione</button><label class="small" style="display:flex;align-items:center;gap:6px">Esagerazione quota <input id="v27Ex" type="range" min="1" max="5" step="0.5" value="2.5"></label></div>
+<canvas id="v27Canvas" width="1000" height="520" style="width:100%;height:520px;border-radius:12px;background:#07101c;touch-action:none"></canvas>
+<div id="v27Info" class="notice" style="margin-top:10px;background:#111827;color:#e5e7eb">Importa un GPX con quote per visualizzare il profilo.</div>
+</section>
+<script>
+(()=>{
+ const c=document.getElementById('v27Canvas'),ctx=c.getContext('2d'),info=document.getElementById('v27Info');
+ let yaw=-0.55,pitch=0.62,ex=2.5,drag=false,lx=0,ly=0,auto=false,raf;
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ function colorAspect(deg){const d=((deg%360)+360)%360; const names=['N','NE','E','SE','S','SW','W','NW']; return names[Math.round(d/45)%8]}
+ function bearing(a,b){const r=Math.PI/180,y1=a.lat*r,y2=b.lat*r,dl=(b.lon-a.lon)*r;return (Math.atan2(Math.sin(dl)*Math.cos(y2),Math.cos(y1)*Math.sin(y2)-Math.sin(y1)*Math.cos(y2)*Math.cos(dl))/r+360)%360}
+ function project(x,y,z,cx,cy,scale){let X=x*Math.cos(yaw)-y*Math.sin(yaw),Y=x*Math.sin(yaw)+y*Math.cos(yaw);let Z=z*Math.cos(pitch)-Y*Math.sin(pitch);let YY=z*Math.sin(pitch)+Y*Math.cos(pitch);let persp=1/(1+YY/scale*.45);return [cx+X*persp,cy-Z*persp]}
+ function draw(){
+  const W=c.clientWidth||1000,H=c.clientHeight||520,dpr=devicePixelRatio||1;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  const pts=window.routePoints||[]; if(pts.length<2){ctx.fillStyle='#94a3b8';ctx.font='16px system-ui';ctx.fillText('Importa un GPX con almeno 2 punti.',24,40);return}
+  const step=Math.max(1,Math.floor(pts.length/260)),arr=pts.filter((_,i)=>i%step===0||i===pts.length-1);
+  const minE=Math.min(...arr.map(p=>Number(p.ele)||0)),maxE=Math.max(...arr.map(p=>Number(p.ele)||0));
+  const total=arr[arr.length-1].dist||1; const scaleX=Math.max(0.7,Math.min(2.2,900/(total/1000+1))); const zScale=0.055*ex;
+  let cx=W/2,cy=H*.62; const points=arr.map((p,i)=>{const x=((p.dist||0)-total/2)/1000*scaleX;const y=((i/(arr.length-1))-.5)*170;const z=((Number(p.ele)||minE)-minE)*zScale;return {p,x,y,z}});
+  // grid
+  ctx.strokeStyle='rgba(148,163,184,.16)';ctx.lineWidth=1;for(let i=0;i<8;i++){const yy=80+i*48;ctx.beginPath();ctx.moveTo(20,yy);ctx.lineTo(W-20,yy);ctx.stroke()}
+  // route
+  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],mid=arr[Math.min(arr.length-1,i)];const asp=bearing(a.p,b.p);const hue=(asp/360)*360;ctx.strokeStyle=`hsl(${hue},75%,60%)`;ctx.lineWidth=3;const A=project(a.x,a.y,a.z,cx,cy,900),B=project(b.x,b.y,b.z,cx,cy,900);ctx.beginPath();ctx.moveTo(...A);ctx.lineTo(...B);ctx.stroke()}
+  // vertical guide + endpoints
+  const A=project(points[0].x,points[0].y,points[0].z,cx,cy,900),B=project(points.at(-1).x,points.at(-1).y,points.at(-1).z,cx,cy,900);ctx.fillStyle='#f8fafc';ctx.font='12px system-ui';ctx.fillText('START',A[0]+6,A[1]-8);ctx.fillText('ARRIVO',B[0]+6,B[1]-8);
+  ctx.fillStyle='#cbd5e1';ctx.fillText(`${Math.round(minE)} m`,18,H-38);ctx.fillText(`${Math.round(maxE)} m`,18,32);
+  ctx.fillStyle='#94a3b8';ctx.fillText('Colore = esposizione geometrica del tratto · quota amplificata solo per leggibilità',24,H-16);
+  info.innerHTML=`<b>${(total/1000).toFixed(1)} km</b> · quota <b>${Math.round(minE)}–${Math.round(maxE)} m</b> · esagerazione verticale <b>${ex.toFixed(1)}×</b> · trascina per ruotare.`;
+ }
+ function loop(){if(auto){yaw+=0.006;draw();raf=requestAnimationFrame(loop)}}
+ document.getElementById('v27Reset').onclick=()=>{yaw=-0.55;pitch=.62;draw()};
+ document.getElementById('v27Auto').onclick=()=>{auto=!auto;document.getElementById('v27Auto').textContent=auto?'Stop auto-rotazione':'Auto-rotazione';cancelAnimationFrame(raf);if(auto)loop()};
+ document.getElementById('v27Ex').oninput=e=>{ex=+e.target.value;draw()};
+ c.addEventListener('pointerdown',e=>{drag=true;lx=e.clientX;ly=e.clientY;c.setPointerCapture(e.pointerId)});
+ c.addEventListener('pointermove',e=>{if(!drag)return;yaw+=(e.clientX-lx)*.008;pitch=clamp(pitch+(e.clientY-ly)*.006,.15,1.25);lx=e.clientX;ly=e.clientY;draw()});
+ c.addEventListener('pointerup',()=>drag=false);c.addEventListener('pointercancel',()=>drag=false);
+ window.addEventListener('resize',draw);window.AlpineV27={refresh:draw};
+ const old=window.AlpineV26?.refresh; setTimeout(draw,50);
+ setInterval(draw,1500);
+})();
+</script>
+
+</body>
+</html>
